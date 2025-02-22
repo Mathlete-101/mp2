@@ -1,0 +1,37 @@
+[3.772s] Invoking command in '/home/moonpie/mp2/moonpie_lari': PYTHONPATH=/home/moonpie/mp2/moonpie_lari/build/moonpie-lari/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base build/moonpie-lari build --build-base /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build install --record /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/install.log --single-version-externally-managed install_data
+[4.982s] running egg_info
+[4.985s] creating build/moonpie-lari/moonpie_lari.egg-info
+[4.986s] writing build/moonpie-lari/moonpie_lari.egg-info/PKG-INFO
+[4.987s] writing dependency_links to build/moonpie-lari/moonpie_lari.egg-info/dependency_links.txt
+[4.988s] writing entry points to build/moonpie-lari/moonpie_lari.egg-info/entry_points.txt
+[4.989s] writing requirements to build/moonpie-lari/moonpie_lari.egg-info/requires.txt
+[4.989s] writing top-level names to build/moonpie-lari/moonpie_lari.egg-info/top_level.txt
+[4.990s] writing manifest file 'build/moonpie-lari/moonpie_lari.egg-info/SOURCES.txt'
+[5.004s] reading manifest file 'build/moonpie-lari/moonpie_lari.egg-info/SOURCES.txt'
+[5.006s] writing manifest file 'build/moonpie-lari/moonpie_lari.egg-info/SOURCES.txt'
+[5.007s] running build
+[5.008s] running build_py
+[5.008s] creating /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build
+[5.009s] creating /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build/lib
+[5.009s] creating /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build/lib/moonpie_lari
+[5.010s] copying moonpie_lari/arduino_control.py -> /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build/lib/moonpie_lari
+[5.010s] copying moonpie_lari/__init__.py -> /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build/lib/moonpie_lari
+[5.011s] running install
+[5.012s] running install_lib
+[5.015s] creating /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari
+[5.016s] copying /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build/lib/moonpie_lari/arduino_control.py -> /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari
+[5.017s] copying /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build/lib/moonpie_lari/__init__.py -> /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari
+[5.020s] byte-compiling /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari/arduino_control.py to arduino_control.cpython-310.pyc
+[5.022s] byte-compiling /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari/__init__.py to __init__.cpython-310.pyc
+[5.023s] running install_data
+[5.024s] creating /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/share/ament_index
+[5.025s] creating /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/share/ament_index/resource_index
+[5.025s] creating /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/share/ament_index/resource_index/packages
+[5.025s] copying resource/moonpie-lari -> /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/share/ament_index/resource_index/packages
+[5.026s] copying package.xml -> /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/share/moonpie-lari
+[5.026s] running install_egg_info
+[5.033s] Copying build/moonpie-lari/moonpie_lari.egg-info to /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari-0.0.0-py3.10.egg-info
+[5.038s] running install_scripts
+[5.130s] Installing arduino_control script to /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/moonpie-lari
+[5.131s] writing list of installed files to '/home/moonpie/mp2/moonpie_lari/build/moonpie-lari/install.log'
+[5.273s] Invoked command in '/home/moonpie/mp2/moonpie_lari' returned '0': PYTHONPATH=/home/moonpie/mp2/moonpie_lari/build/moonpie-lari/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base build/moonpie-lari build --build-base /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build install --record /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/install.log --single-version-externally-managed install_data

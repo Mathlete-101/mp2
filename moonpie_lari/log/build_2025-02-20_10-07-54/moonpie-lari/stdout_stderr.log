@@ -1,0 +1,23 @@
+running egg_info
+writing build/moonpie-lari/moonpie_lari.egg-info/PKG-INFO
+writing dependency_links to build/moonpie-lari/moonpie_lari.egg-info/dependency_links.txt
+writing entry points to build/moonpie-lari/moonpie_lari.egg-info/entry_points.txt
+writing requirements to build/moonpie-lari/moonpie_lari.egg-info/requires.txt
+writing top-level names to build/moonpie-lari/moonpie_lari.egg-info/top_level.txt
+reading manifest file 'build/moonpie-lari/moonpie_lari.egg-info/SOURCES.txt'
+writing manifest file 'build/moonpie-lari/moonpie_lari.egg-info/SOURCES.txt'
+running build
+running build_py
+copying moonpie_lari/arduino_control.py -> /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build/lib/moonpie_lari
+running install
+running install_lib
+copying /home/moonpie/mp2/moonpie_lari/build/moonpie-lari/build/lib/moonpie_lari/arduino_control.py -> /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari
+byte-compiling /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari/arduino_control.py to arduino_control.cpython-310.pyc
+running install_data
+copying package.xml -> /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/share/moonpie-lari
+running install_egg_info
+removing '/home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari-0.0.0-py3.10.egg-info' (and everything under it)
+Copying build/moonpie-lari/moonpie_lari.egg-info to /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari-0.0.0-py3.10.egg-info
+running install_scripts
+Installing arduino_control script to /home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/moonpie-lari
+writing list of installed files to '/home/moonpie/mp2/moonpie_lari/build/moonpie-lari/install.log'

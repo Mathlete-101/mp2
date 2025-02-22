@@ -1,0 +1,5 @@
+  File "/home/moonpie/mp2/moonpie_lari/install/moonpie-lari/lib/python3.10/site-packages/moonpie_lari/arduino_control.py", line 46
+    "angularz_rps": msg.angular.z
+                    
+SyntaxError: invalid syntax. Perhaps you forgot a comma?
+
