@@ -57,38 +57,50 @@ class ArduinoControl(Node):
            "dpad": {"x": 0, "y": 0},
            "Kp": 2.5,
            "Ki": 0.05,
+            "dump_belt": 0,
+            "dig_belt": 0,
+            "dig_actuator": 0,
         }
 
         self.get_logger().info('Arduino Control Node has started')
 
         def ard_msg_thread(ctrl, msg, log, conn):
-            log.info(f"thread_started")
-            while ctrl.empty():
-                msg.put(conn.readline())
+            try:
+                log.info(f"thread_started")
+                while ctrl.empty():
+                    msg.put(conn.readline())
+            except KeyboardInterrupt:
+                log.info("message thread interrupted")
         self.amt_ctrl = Queue()
         self.amt_msg = Queue()
-        self.amt_tmr = Node.create_timer(0.01, self.publish_messages)
+        self.amt_tmr = self.create_timer(0.01, self.publish_messages)
         self.amt = Thread(target=ard_msg_thread, args=(self.amt_ctrl, self.amt_msg, self.get_logger(), self.serial_connection))
         self.amt.start()
 
+        self.comms_timer = self.create_timer(0.1, self.write_message)
 
-    def destroy_node():
+
+    def destroy_node(self):
         super().destroy_node()
         self.amt_ctrl.put(0) # stop the message thread
          
 
-    def publish_messages():
+    def publish_messages(self):
         while not self.amt_msg.empty():
             msg = self.amt_msg.get().decode()
             try:
                 result = json.loads(msg)
                 #publish whatever messages need to be published
             except:
-                log.info(f"arduino: {msg}");
+                self.get_logger().info(f"arduino: {msg}");
                 
     def joy(self, msg):
-        self.message = dict(self.message, **{a: b for a, b in zip(("mining_belt", "dig_belt", "mining_actuator"), msg.buttons[:3])})
-        self.write_message()
+        
+        self.message = dict(self.message, **{
+            "dump_belt": msg.buttons[0],
+            "dig_belt": msg.buttons[1],
+            "dig_actuator": msg.axes[7],
+        })
         
 
     def cmd_vel(self, msg):
@@ -97,12 +109,11 @@ class ArduinoControl(Node):
            "linearx_mps": msg.linear.x,
            "angularz_rps": msg.angular.z,
         })
-        self.write_message()
 
     def write_message(self):
-        cmd = json.dumps(self.message.encode()) + "\n"
+        cmd = json.dumps(self.message).encode() + b"\n"
         try:
-            self.serial_connection.write(cmd.encode())
+            self.serial_connection.write(cmd)
         except serial.serialutil.SerialTimeoutException as e:
             self.get_logger().info(f'write timeout {e}')
 
