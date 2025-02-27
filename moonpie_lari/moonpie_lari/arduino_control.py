@@ -4,6 +4,7 @@
 import time
 from queue import Queue
 from threading import Thread
+from sensor_msgs.msg import Joy
 import rclpy
 from rclpy.node import Node
 import serial
@@ -36,23 +37,37 @@ class ArduinoControl(Node):
             self.get_logger().warning(str(e))
             self.serial_connection = self.serial_logger()
             self.serial_connection.reset_input_buffer()
-        self.subscription = self.create_subscription(
+        self.twist_subscription = self.create_subscription(
             Twist,              # Message type
             'cmd_vel',           # Topic name
             self.cmd_vel,  # Callback function
             10                    # Queue size
         )
+        self.joy_subscription = self.create_subscription(
+            Joy,
+            'joy',
+            self.joy,
+            10
+
+        )
+        self.message = {
+           "linearx_mps": 0.0,
+           "angularz_rps": 0.0,
+           "buttons": {"A": 0, "B": 0, "X": 0, "Y": 0},
+           "dpad": {"x": 0, "y": 0},
+           "Kp": 2.5,
+           "Ki": 0.05,
+        }
 
         self.get_logger().info('Arduino Control Node has started')
 
         def ard_msg_thread(ctrl, msg, log, conn):
             log.info(f"thread_started")
             while ctrl.empty():
-                l = conn.readline()
-                log.info(f"arduino: {l.decode()}");
-                msg.put(l)
+                msg.put(conn.readline())
         self.amt_ctrl = Queue()
         self.amt_msg = Queue()
+        self.amt_tmr = Node.create_timer(0.01, self.publish_messages)
         self.amt = Thread(target=ard_msg_thread, args=(self.amt_ctrl, self.amt_msg, self.get_logger(), self.serial_connection))
         self.amt.start()
 
@@ -62,16 +77,30 @@ class ArduinoControl(Node):
         self.amt_ctrl.put(0) # stop the message thread
          
 
+    def publish_messages():
+        while not self.amt_msg.empty():
+            msg = self.amt_msg.get().decode()
+            try:
+                result = json.loads(msg)
+                #publish whatever messages need to be published
+            except:
+                log.info(f"arduino: {msg}");
+                
+    def joy(self, msg):
+        self.message = dict(self.message, **{a: b for a, b in zip(("mining_belt", "dig_belt", "mining_actuator"), msg.buttons[:3])})
+        self.write_message()
+        
+
     def cmd_vel(self, msg):
-        #self.get_logger().info(f'Received: "{msg}"')
-        cmd = json.dumps({
+        #self.get_logger().info(f'Received cmd_vel: "{msg}"')
+        self.message = dict(self.message, **{
            "linearx_mps": msg.linear.x,
            "angularz_rps": msg.angular.z,
-           "buttons": {"A": 0, "B": 0, "X": 0, "Y": 0},
-           "dpad": {"x": 0, "y": 0},
-           "Kp": 2.5,
-           "Ki": 0.05,
-        }) + "\n"
+        })
+        self.write_message()
+
+    def write_message(self):
+        cmd = json.dumps(self.message.encode()) + "\n"
         try:
             self.serial_connection.write(cmd.encode())
         except serial.serialutil.SerialTimeoutException as e:
@@ -83,4 +112,3 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-
