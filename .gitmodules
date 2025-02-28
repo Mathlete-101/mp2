@@ -1,3 +1,9 @@
 [submodule "imu"]
 	path = imu
 	url = git@github.com:kimsniper/ros2_mpu6050.git
+[submodule "beacon/dw1000"]
+	path = beacon/dw1000
+	url = git@github.com:taaki2311/arduino-dw1000.git
+[submodule "beacon/esp-idf"]
+	path = beacon/esp-idf
+	url = https://github.com/espressif/esp-idf.git

@@ -19,13 +19,13 @@
 
 #define RIGHT_B_PWM 5
 #define RIGHT_B_DIR 16   // spins opposite way, encoders inc with current forward
-#define ENCR_A_BR 19
-#define ENCR_B_BR 29
+#define ENCR_A_BR 3
+#define ENCR_B_BR 23
 
 #define LEFT_B_PWM 12
 #define LEFT_B_DIR 17
-#define ENCR_A_BL 3
-#define ENCR_B_BL 23
+#define ENCR_A_BL 19
+#define ENCR_B_BL 29
 
 #define ACT_MTR_PWM 11        
 #define ACT_MTR_DIR 15 
@@ -38,7 +38,7 @@
 
 #define SAMPLE_TIME_MS 10
 
-#define BATTERY_VOLTAGE 12.8
+#define BATTERY_VOLTAGE 13.2
 #define PI 3.141593
 
 #define ENC_CNT_PER_REV 5281
@@ -262,7 +262,7 @@ void actuatorControl() {
     static float PWM_Actuator = 150.0;
 
     // Control actuator based on button inputs
-    if (buttons[0]) {
+    if (dig_actuator_ctrl != 0) {
       // Manage PWM using DPAD
         PWM_Actuator = constrain(PWM_Actuator + (dig_actuator_ctrl * 0.1), 0.0, 255.0);
         actuator.setSpeed(PWM_Actuator);  // Extend
@@ -280,7 +280,7 @@ void digBeltControl() {
   static float PWM_DigBelt = 150.0;
 
    // X button pressed, no other buttons pressed, dig
-  if (buttons[2]) {
+  if (dig_belt_ctrl != 0) {
     // manage PWM 
     PWM_DigBelt = constrain(PWM_DigBelt + (dig_belt_ctrl * 0.1), 0.0, 255.0);
     digBelt.setSpeed(PWM_DigBelt);
@@ -296,7 +296,7 @@ void convBeltControl() { //dump belt
   static float PWM_ConvBelt = 100.0;
 
   // Y button pressed, no other buttons pressed, dump
-  if (buttons[3]) {
+  if (dump_belt_ctrl != 0) {
      // manage PWM 
     PWM_ConvBelt = constrain(PWM_ConvBelt + (dump_belt_ctrl * 0.1), 0.0, 255.0);
     convBelt.setSpeed(PWM_ConvBelt);
