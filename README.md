@@ -14,9 +14,11 @@ This directory holds the nodes for the raspberry pi "Lari", which handles commun
 
 #moonpie-osamu
 How to install the librealsense ros:
-follow the instructions on the github, but do two other things
-1. pip install colcon-common-extensions
-2. pip install empy==3.3.4
+follow the instructions on the github, but between part 2 of the instructions and part 3 of the isntructions, do these unlisted steps which fix various errors
+1. ```pip install colcon-common-extensions```
+2. ```pip install empy==3.3.4```
+3. ```choco install boost-msvc-14.1```
+4. manually install vision\_opencv. It's a submodule of this repo, you should be able to colcon build it, then call install/setup.cmd. Make sure to switch to the humble branch with ```git switch humble```
 
 #ardu 
-This directory is the arduino project for the arduino connected to "Lari". The two should bnnected via usb
+This directory is the arduino project for the arduino connected to "Lari". The two should be connected via usb
