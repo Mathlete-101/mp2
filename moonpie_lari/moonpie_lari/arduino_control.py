@@ -51,15 +51,23 @@ class ArduinoControl(Node):
 
         )
         self.message = {
-           "linearx_mps": 0.0,
-           "angularz_rps": 0.0,
-           "buttons": {"A": 0, "B": 0, "X": 0, "Y": 0},
-           "dpad": {"x": 0, "y": 0},
-           "Kp": 2.5,
-           "Ki": 0.05,
-            "dump_belt": 0,
-            "dig_belt": 0,
-            "dig_actuator": 0,
+            "cmd": True,
+			"linearx_mps": 0.0,
+			"angularz_rps": 0.0,
+			"dump_belt": 0,
+			"dig_belt": 0,
+			"actuator_extend": False,
+			"actuator_retract": False,
+			
+			#params -- ignore
+			#"Kp": 0.75,
+			#"Ki": 0.02,
+			#"dutyA": 50,
+			#"dutyB": 60,
+			#"dutyC": 40,
+			
+			#dont use
+			"dpad": {"x": 0, "y": 0},
         }
 
         self.get_logger().info('Arduino Control Node has started')
@@ -76,7 +84,8 @@ class ArduinoControl(Node):
         self.amt_tmr = self.create_timer(0.01, self.publish_messages)
         self.amt = Thread(target=ard_msg_thread, args=(self.amt_ctrl, self.amt_msg, self.get_logger(), self.serial_connection))
         self.amt.start()
-
+        
+        self.send_mode = 0
         self.comms_timer = self.create_timer(0.1, self.write_message)
 
 
@@ -99,7 +108,8 @@ class ArduinoControl(Node):
         self.message = dict(self.message, **{
             "dump_belt": msg.buttons[0],
             "dig_belt": msg.buttons[1],
-            "dig_actuator": msg.axes[7],
+            "actuator_extend": msg.axes[7] < 0,
+            "actuator_retract": msg.axes[7] > 0,
         })
         
 
@@ -111,7 +121,17 @@ class ArduinoControl(Node):
         })
 
     def write_message(self):
-        cmd = json.dumps(self.message).encode() + b"\n"
+        if self.send_mode == 0:
+            cmd = json.dumps(self.message).encode() + b"\n"
+            self.send_mode = 0
+
+        #request data. this strat is probably bad
+        elif self.send_mode == 1:
+            cmd = b'{"cmd": false, "drive_train": {"set_angularz_rps": null, "set_linearx_mps": null}, "actuator": {"get_state": null}, "dig_belt": {"get_state": null}, "dump_belt": {"get_state": null}}\n'
+            self.send_mode = 0
+        else:
+            self.get_logger().error("invalid send mode")
+        self.get_logger().info(f"sending message: {self.send_mode}\n{cmd}")
         try:
             self.serial_connection.write(cmd)
         except serial.serialutil.SerialTimeoutException as e:
