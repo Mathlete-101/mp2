@@ -56,3 +56,4 @@ log
 moonpie_lari/install/**/*
 moonpie_lari/build/**/*
 moonpie_lari
+**/*:Zone.Identifier
