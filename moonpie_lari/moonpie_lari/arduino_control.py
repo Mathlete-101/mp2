@@ -17,12 +17,15 @@ import json
 # While driving and digging, the dump belt will rotate for time every time to more evenly load regolith
 # After driving and digging, the rover will stop and stop digging, then retract the dig belt for time
 
-ACTUATOR_EXTEND_S = 7
+ACTUATOR_EXTEND_S = 2
 DRIVE_FORWARD_S = 20
-DUMP_ROTATE_EVERY_S = 5
-DUMP_ROTATE_PERIOD_S = 0.5
-ACTUATOR_RETRACT_S = 7
-DRIVE_AND_DIG_SPEED_MPS = 0.1
+DUMP_ROTATE_EVERY_S = 1
+DUMP_ROTATE_PERIOD_S = 1
+ACTUATOR_RETRACT_S = 4
+DRIVE_AND_DIG_SPEED_MPS = 0.05
+
+# for autonomy, Ki must be zero or the rover will slowly increase speed 
+Ki = 0
 
 class ArduinoControl(Node):
     def __init__(self):
@@ -49,6 +52,7 @@ class ArduinoControl(Node):
             "actuator_extend": False,
             "actuator_retract": False,
             "dpad": {"x": 0, "y": 0},
+            "Ki": Ki,
         }
 
         self.get_logger().info('Arduino Control Node has started')
