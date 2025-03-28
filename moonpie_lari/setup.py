@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'arduino_control = moonpie_lari.arduino_control:main'
+            'arduino_control = moonpie_lari.arduino_control:main',
+            'arduino_comms = moonpie_lari.arduino_comms:main',
         ],
     },
 )
