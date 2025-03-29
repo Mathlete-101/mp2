@@ -15,17 +15,18 @@ import json
 # The actuator will extend with the dig belt on for time
 # The rover will drive forward at a slow constand speed with the dig belt on for time
 # While driving and digging, the dump belt will rotate for time every time to more evenly load regolith
-# After driving and digging, the rover will stop and stop digging, then retract the dig belt for time
+# After driving and digging, the rover will stop, then retract the dig belt for time with the dig belt on
+# Everything stops
 
 ACTUATOR_EXTEND_S = 2
 DRIVE_FORWARD_S = 20
-DUMP_ROTATE_EVERY_S = 1
+DUMP_ROTATE_EVERY_S = 5
 DUMP_ROTATE_PERIOD_S = 1
 ACTUATOR_RETRACT_S = 4
 DRIVE_AND_DIG_SPEED_MPS = 0.05
 
-# for autonomy, Ki must be zero or the rover will slowly increase speed 
-Ki = 0
+# for autonomy, Ki must be small or the rover will slowly increase speed 
+Ki = 0.05
 
 class ArduinoControl(Node):
     def __init__(self):
@@ -63,6 +64,7 @@ class ArduinoControl(Node):
         self.autonomous_active = False
         self.autonomous_start_time = 0.0
         self.dump_belt_last_time = 0.0
+        self.dump_belt_on_period = False
 
     def joy(self, msg):
         self.message = dict(self.message, **{
@@ -134,24 +136,27 @@ class ArduinoControl(Node):
             self.message["actuator_extend"] = True
             self.message["linearx_mps"] = 0.0
             self.message["dig_belt"] = 1
-        elif ACTUATOR_EXTEND_S <= elapsed_time < ACTUATOR_EXTEND_S + DRIVE_FORWARD_S:
+        elif elapsed_time < ACTUATOR_EXTEND_S + DRIVE_FORWARD_S:
             self.message["actuator_extend"] = False
             self.message["linearx_mps"] = DRIVE_AND_DIG_SPEED_MPS
             self.message["dig_belt"] = 1
-            if current_time - self.dump_belt_last_time >= DUMP_ROTATE_EVERY_S:
-                self.message["dump_belt"] = 1
-                self.dump_belt_last_time = current_time
-            if current_time - self.dump_belt_last_time >= DUMP_ROTATE_PERIOD_S and self.message["dump_belt"] == 1:
-                self.message["dump_belt"] = 0
 
-        elif elapsed_time >= ACTUATOR_EXTEND_S + DRIVE_FORWARD_S:
+            # Rotate dump belt at intervals
+            if (elapsed_time - ACTUATOR_EXTEND_S) % DUMP_ROTATE_EVERY_S < DUMP_ROTATE_PERIOD_S:
+                self.message["dump_belt"] = 1
+            else:
+                self.message["dump_belt"] = 0
+        elif elapsed_time < ACTUATOR_EXTEND_S + DRIVE_FORWARD_S + ACTUATOR_RETRACT_S:
             self.message["linearx_mps"] = 0.0
-            self.message["dig_belt"] = 0
+            self.message["dig_belt"] = 1
             self.message["actuator_retract"] = True
-            if elapsed_time >= ACTUATOR_EXTEND_S + DRIVE_FORWARD_S + ACTUATOR_RETRACT_S:
-                self.message["actuator_retract"] = False
-                self.autonomous_active = False
-                self.get_logger().info("Autonomous process finished")
+        else:
+            # Stop everything
+            self.message["actuator_retract"] = False
+            self.message["dig_belt"] = 0
+            self.autonomous_active = False
+            self.get_logger().info("Autonomous process finished")
+
 
 def main(args=None):
     rclpy.init(args=args)
