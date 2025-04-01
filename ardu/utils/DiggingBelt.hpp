@@ -40,7 +40,7 @@ class DiggingBelt {
     void stop();
 
     private:
-    int pwm = 150;
+    int pwm = 255;
     double currentSpeedRPM = 0;
     bool digging = false;
 

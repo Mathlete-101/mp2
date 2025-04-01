@@ -1,7 +1,7 @@
-#include "Actuator.hpp"
-#include "DumpingBelt.hpp"
-#include "DiggingBelt.hpp"
-#include "DriveTrain.hpp"
+#include "utils\Actuator.hpp"
+#include "utils\DumpingBelt.hpp"
+#include "utils\DiggingBelt.hpp"
+#include "utils\DriveTrain.hpp"
 #include <ArduinoJson.h>
 
 // use initalize function in sketch to confirm initialization
@@ -62,6 +62,7 @@ void loop() {
 
   // control the digging belt, X = on
   digBelt.remoteControl(dig_belt);
+  digBelt.update();
 
 
   // Print update every 5 seconds
@@ -151,104 +152,57 @@ void executeCommand(String command) {
     }
     // split so that each motor gets a different value
     if (doc.containsKey("dutyA")) {
-        percentDutyCycle = doc["dutyA"];
-        actuator.setPWM(percentDutyCycle);
+      JsonObject actuatorSpeedJson = doc["dutyA"];
+      actuator.setPWM(actuatorSpeedJson["extend_speed"], actuatorSpeedJson["retract_speed"]);
     }
     if (doc.containsKey("dutyD")) {
-        percentDutyCycle = doc["dutyD"];
-        dumpBelt.setPWM(percentDutyCycle);
+      dumpBelt.setPWM(doc["dutyD"]);
     }
      if (doc.containsKey("dutyB")) {
-        percentDutyCycle = doc["dutyB"];
-        digBelt.setPWM(percentDutyCycle);
+      digBelt.setPWM(doc["dutyB"]);
     }
 }
 
 void createUpdate(String updateRequest) {
-  StaticJsonDocument<256> received;
   StaticJsonDocument<256> response;
 
-  DeserializationError error = deserializeJson(received, updateRequest);
-
 // drive train updates
-  if (received.containsKey("drive_train")) {
-    JsonObject drive_train_response = response.createNestedObject("drive_train");
-    JsonObject drive_train_received = received["drive_train"];
+  JsonObject drive_train_response = response.createNestedObject("drive_train");
 
-    if (drive_train_received.containsKey("set_linearx_mps")) {
-      drive_train_response["set_linearx_mps"] = driveTrain.getSetFWDSpeedMPS();
-    }
-    if (drive_train_received.containsKey("set_angularz_rps")) {
-      drive_train_response["set_angularz_rps"] = driveTrain.getSetANGSpeedRPS();
-    }
-    if (drive_train_received.containsKey("actual_linearx_mps")) {
-      drive_train_response["actual_linearx_mps"] = driveTrain.getActualFWDSpeedMPS();
-    }
-    if (drive_train_received.containsKey("actual_angularz_rps")) {
-      drive_train_response["actual_angularz_rps"] = driveTrain.getActualANGSpeedRPS();
-    }
-    if (drive_train_received.containsKey("get_Kp")) {
-      drive_train_response["get_Kp"] = driveTrain.getKp();
-    }
-    if (drive_train_received.containsKey("get_Ki")) {
-      drive_train_response["get_Ki"] = driveTrain.getKi();
-    }
-    if (drive_train_received.containsKey("get_state")) {
-      drive_train_response["get_state"] = driveTrain.getState();
-    }
-  }
+  drive_train_response["set_linearx_mps"] = driveTrain.getSetFWDSpeedMPS();
+  drive_train_response["set_angularz_rps"] = driveTrain.getSetANGSpeedRPS();
+  drive_train_response["actual_linearx_mps"] = driveTrain.getActualFWDSpeedMPS();
+  drive_train_response["actual_angularz_rps"] = driveTrain.getActualANGSpeedRPS();
+  drive_train_response["get_Kp"] = driveTrain.getKp();
+  drive_train_response["get_Ki"] = driveTrain.getKi();
+  drive_train_response["get_state"] = driveTrain.getState();
+    
   // actuator updates
-  if (received.containsKey("actuator")) {
-    JsonObject actuator_response = response.createNestedObject("actuator");
-    JsonObject actuator_received = received["actuator"];
+  JsonObject actuator_response = response.createNestedObject("actuator");
 
-    if (actuator_received.containsKey("get_state")) {
-      actuator_response["get_state"] = actuator.getState();
-    }
-    if (actuator_received.containsKey("get_pwm")) {
-      actuator_response["get_pwm"] = actuator.getPWM();
-    }
-  }
+  actuator_response["get_state"] = actuator.getState();
+  actuator_response["get_pwm_extend"] = actuator.getPWMExtend();
+  actuator_response["get_pwm_retract"] = actuator.getPWMRetract();
+  
   // digging belt updates
-  if (received.containsKey("dig_belt")) {
-    JsonObject dig_belt_response = response.createNestedObject("dig_belt");
-    JsonObject dig_belt_received = received["dig_belt"];
+  JsonObject dig_belt_response = response.createNestedObject("dig_belt");
 
-    if (dig_belt_received.containsKey("get_state")) {
-      dig_belt_response["get_state"] = digBelt.getState();
-    }
-    if (dig_belt_received.containsKey("get_pwm")) {
-      dig_belt_response["get_pwm"] = digBelt.getPWM();
-    }
-    if (dig_belt_received.containsKey("get_speed")) {
-      dig_belt_response["get_speed"] = digBelt.getCurrentSpeedRPM();
-    }
-  }
+  dig_belt_response["get_state"] = digBelt.getState();
+  dig_belt_response["get_pwm"] = digBelt.getPWM();
+  dig_belt_response["get_speed"] = digBelt.getCurrentSpeedRPM();
+  
   // dumping belt updates
-  if (received.containsKey("dump_belt")) {
-    JsonObject dump_belt_response = response.createNestedObject("dump_belt");
-    JsonObject dump_belt_received = received["dump_belt"];
-
-    if (dump_belt_received.containsKey("get_state")) {
-      dump_belt_response["get_state"] = dumpBelt.getState();
-    }
-    if (dump_belt_received.containsKey("get_pwm")) {
-      dump_belt_response["get_pwm"] = dumpBelt.getPWM();
-    }
-    if (dump_belt_received.containsKey("get_loads")) {
-      dump_belt_response["get_loads"] = dumpBelt.getNumLoadsOnBelt();
-    }
-    if (dump_belt_received.containsKey("get_full")) {
-      dump_belt_response["get_full"] = dumpBelt.isFull();
-    }
-  }
+  JsonObject dump_belt_response = response.createNestedObject("dump_belt");
+  dump_belt_response["get_state"] = dumpBelt.getState();
+  dump_belt_response["get_pwm"] = dumpBelt.getPWM();
+  dump_belt_response["get_loads"] = dumpBelt.getNumLoadsOnBelt();
+  dump_belt_response["get_full"] = dumpBelt.isFull();
 
   String updateResponse;
   serializeJson(response, updateResponse);
 
   // send the response
   Serial.println(updateResponse);
-
 }
 
 // print update on stuff happening 
@@ -284,8 +238,10 @@ void printData() {
     Serial.print("\tKi: ");
     Serial.print(Ki);
 
-    Serial.print("\tPWM (A, DUMP, DIG): ");
-    Serial.print(actuator.getPWM());
+    Serial.print("\tPWM (A (Ex, Re), DUMP, DIG): ");
+    Serial.print(actuator.getPWMExtend());
+    Serial.print(", ");
+    Serial.print(actuator.getPWMRetract());
     Serial.print(", ");
     Serial.print(dumpBelt.getPWM());
     Serial.print(", ");
@@ -299,3 +255,12 @@ void hardStop() {
   digBelt.stop();
   driveTrain.stop();
 }
+
+
+
+
+
+
+
+
+

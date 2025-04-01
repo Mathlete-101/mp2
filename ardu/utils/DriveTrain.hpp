@@ -91,7 +91,7 @@ class DriveTrain {
     double actual_speed_mps = 0;
     double actual_angular_speed_rps = 0;
     double Kp = 2.5;
-    double Ki = 0.05;
+    double Ki = 0.5;
 
     long duration;
     long startTime;
@@ -235,6 +235,7 @@ void DriveTrain::update() {
             stop();
         }
     }
+    calculateActualSpeed(); // update the actual speeds of the rover
 }
 
 void DriveTrain::setKp(double newKp) {
@@ -258,7 +259,6 @@ double DriveTrain::getSetFWDSpeedMPS() {
 }
 
 double DriveTrain::getActualFWDSpeedMPS() {
-    calculateActualSpeed();
     return actual_speed_mps;
 }
 
@@ -267,7 +267,6 @@ double DriveTrain::getSetANGSpeedRPS() {
 }
 
 double DriveTrain::getActualANGSpeedRPS() {
-    calculateActualSpeed();
     return actual_angular_speed_rps;
 }
 

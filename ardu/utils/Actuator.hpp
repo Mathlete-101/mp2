@@ -34,14 +34,19 @@ class Actuator {
 
         /// @brief set the speed of retracting/extending by giving 
         /// @param duty percent duty cycle value 0-100 duty cycle (speed) value
-        void setPWM(int duty);
+        void setPWM(int dutyExtend, int dutyRetract);
 
-        /// @brief get current PWM of actuator
+        /// @brief get current PWM extend of actuator
         /// @return pwm
-        int getPWM();
+        int getPWMExtend();
+
+        /// @brief get current PWM retract of actuator
+        /// @return pwm
+        int getPWMRetract();
 
     private:
-        int pwm = 150;
+        int pwmExtend = 127;
+        int pwmRetract = 255;
         bool isExtending = false;
         bool extended = false;
         bool isRetracting = false;
@@ -67,12 +72,12 @@ void Actuator::remoteControl(bool extend, bool retract) {
         isRetracting = false;
     }
     else if (extend) {
-        actuatorMTR.setSpeed(pwm);
+        actuatorMTR.setSpeed(pwmExtend);
         isExtending = true;
         isRetracting = false;
     }
     else if (retract) {
-        actuatorMTR.setSpeed(-pwm);
+        actuatorMTR.setSpeed(-pwmRetract);
         isExtending = false;
         isRetracting = true;
     }
@@ -88,7 +93,7 @@ void Actuator::extendForTimeMS(long timeExtendMS) {
     retracted = false; // Ensure retracted flag is cleared
     duration = timeExtendMS;
     startTime = millis();
-    actuatorMTR.setSpeed(pwm);
+    actuatorMTR.setSpeed(pwmExtend);
 }
 
 void Actuator::retractForTimeMS(long timeRetractMS) {
@@ -97,7 +102,7 @@ void Actuator::retractForTimeMS(long timeRetractMS) {
     retracted = false;
     duration = timeRetractMS;
     startTime = millis();
-    actuatorMTR.setSpeed(-pwm); // Assuming negative speed retracts
+    actuatorMTR.setSpeed(-pwmRetract); // Assuming negative speed retracts
 }
 
 void Actuator::update() {
@@ -135,10 +140,15 @@ void Actuator::stop() {
 }
 
 // TO DO: update to not set PWM below lowest functional voltage
-void Actuator::setPWM(int duty) {
-    pwm = constrain(map(duty, 0, 100, 0, 255), 0, 255);
+void Actuator::setPWM(int dutyExtend, int dutyRetract) {
+    pwmExtend = constrain(map(dutyExtend, 0, 100, 0, 255), 0, 255);
+    pwmRetract = constrain(map(dutyRetract, 0, 100, 0, 255), 0, 255);
 }
 
-int Actuator::getPWM() {
-    return pwm;
+int Actuator::getPWMExtend() {
+    return pwmExtend;
+}
+
+int Actuator::getPWMRetract() {
+    return pwmRetract;
 }

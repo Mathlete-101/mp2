@@ -4,6 +4,7 @@
 #include "roverConstants.h"
 #include <CytronMotorDriver.h>
 #include <Encoder.h>
+#include <Streaming.h>
 
 class DumpingBelt {
     public:
@@ -50,7 +51,7 @@ class DumpingBelt {
     void stop();
 
     private:
-    int pwm = -150;                   // driving dump belt correct direction
+    int pwm = -255;                   // driving dump belt correct direction
     int numLoadsOnBelt = 0;
     bool full = false;
     bool rotatingForLoads = false;
