@@ -2,4 +2,11 @@ ros-humble-teleop-twist-joy
 ros-humble-joy
 i2c-tools
 libi2c-dev
-python3-pyserial
+python3-serial
+gazebo
+ros-humble-gazebo-ros-pkgs
+ros-humble-gazebo-ros2-control
+ros-humble-ros2-control
+ros-humble-robot-state-publisher
+ros-humble-controller-manager
+ros-humble-hardware-interface
