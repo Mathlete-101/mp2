@@ -12,6 +12,9 @@ This directory holds the nodes for the raspberry pi "Lari", which handles commun
 i'm going to try to list all of the packages that need to be installed via apt in apt-packages.txt.
 you will have to install ros2 humble following the instructions at this link [ROS Humble Installation on Ubuntu](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
 
+# moonpie-osamu
+install librealsense ros according the instructions on the github repo
+
 # installation and running
 Every time you start a terminal, you need to activate ros with the following command: `source /opt/ros/humble/setup.bash`
 To automate this, add that line to the end of your `~\.bashrc`.
