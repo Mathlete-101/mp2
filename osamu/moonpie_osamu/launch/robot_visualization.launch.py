@@ -1,9 +1,9 @@
 """
-This launch file launches the RealSense D435 camera node and RViz for visualization.
-It:
-1. Launches the RealSense camera driver with pointcloud enabled
-2. Launches RViz with a pre-configured view for the camera's pointcloud
-3. Allows toggling RViz on/off with the use_rviz parameter
+This launch file launches the visualization components for the robot and camera data.
+It launches:
+1. The robot state publisher with the robot's URDF description
+2. RViz configured to show both the robot model and camera pointcloud
+This is used when you want to visualize the robot without starting the actual camera.
 """
 
 from launch import LaunchDescription
@@ -27,18 +27,11 @@ def generate_launch_description():
         description='Whether to launch RViz'
     )
     
-    # Include the RealSense launch file
-    realsense_launch = IncludeLaunchDescription(
+    # Include the robot description launch file
+    robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
-            os.path.join(
-                FindPackageShare('realsense2_camera').find('realsense2_camera'),
-                'launch',
-                'rs_launch.py'
-            )
-        ]),
-        launch_arguments={
-            'pointcloud.enable': 'true'
-        }.items()
+            os.path.join(pkg_share, 'launch', 'robot_description.launch.py')
+        ])
     )
     
     # Launch RViz if enabled
@@ -52,6 +45,6 @@ def generate_launch_description():
     
     return LaunchDescription([
         use_rviz_arg,
-        realsense_launch,
+        robot_description_launch,
         rviz_node
     ]) 

@@ -3,18 +3,129 @@
   <world name="robot_world">
     <include>
       <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Sun</uri>
-      <name>sun</name>
       <pose>0 0 10 0 0 0</pose>
     </include>
     <include>
       <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Ground Plane</uri>
-      <name>ground</name>
       <pose>0 0 0 0 0 0</pose>
     </include>
     <include>
-      <uri>model://four_wheeled_robot</uri>
-      <name>robot</name>
-      <pose>0 0 0.5 0 0 0</pose>
+      <uri>file:///home/moonpie/mp2/sim3/models/four_wheeled_robot</uri>
+      <pose>0 0 0.1 0 0 0</pose>
     </include>
+
+    <!-- Objects for depth camera to detect -->
+    <model name="obstacle1">
+      <static>true</static>
+      <pose>0.5 0.3 0.1 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.2 0.2 0.2</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>1 0 0 1</ambient>
+            <diffuse>1 0 0 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.2 0.2 0.2</size>
+            </box>
+          </geometry>
+        </collision>
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.1</iyy>
+            <iyz>0</iyz>
+            <izz>0.1</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+
+    <model name="obstacle2">
+      <static>true</static>
+      <pose>0.8 -0.2 0.15 0 0 0.5</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <ambient>0 1 0 1</ambient>
+            <diffuse>0 1 0 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+        <collision name="collision">
+          <geometry>
+            <cylinder>
+              <radius>0.1</radius>
+              <length>0.3</length>
+            </cylinder>
+          </geometry>
+        </collision>
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.1</iyy>
+            <iyz>0</iyz>
+            <izz>0.1</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+
+    <model name="obstacle3">
+      <static>true</static>
+      <pose>1.2 0.1 0.05 0 0 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3 0.1 0.1</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0 0 1 1</ambient>
+            <diffuse>0 0 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.3 0.1 0.1</size>
+            </box>
+          </geometry>
+        </collision>
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.1</iyy>
+            <iyz>0</iyz>
+            <izz>0.1</izz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
   </world>
 </sdf> 

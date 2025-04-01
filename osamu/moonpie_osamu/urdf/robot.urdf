@@ -41,11 +41,11 @@
     </inertial>
   </link>
 
-  <!-- Fixed joint connecting world to base_link with 180-degree rotation -->
+  <!-- Fixed joint connecting world to base_link -->
   <joint name="world_to_base" type="fixed">
     <parent link="world"/>
     <child link="base_link"/>
-    <origin xyz="0 0 0" rpy="0 0 3.14159"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
   <link name="front_left_wheel">

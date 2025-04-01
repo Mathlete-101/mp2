@@ -1,9 +1,8 @@
 """
 This launch file combines the robot visualization with the RealSense camera.
 It launches:
-1. The robot state publisher with the robot's URDF description
+1. The robot visualization components (robot state publisher and RViz)
 2. The RealSense D435 camera driver with pointcloud enabled
-3. RViz configured to show both the robot model and camera pointcloud
 This is the main launch file to use when you want to visualize both the robot and camera data.
 """
 
@@ -28,48 +27,25 @@ def generate_launch_description():
         description='Whether to launch RViz'
     )
     
-    # Include the robot description launch file
-    robot_description_launch = IncludeLaunchDescription(
+    # Include the robot visualization launch file
+    robot_visualization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
-            os.path.join(pkg_share, 'launch', 'robot_description.launch.py')
-        ])
-    )
-    
-    # Include the RealSense launch file
-    realsense_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            os.path.join(
-                FindPackageShare('realsense2_camera').find('realsense2_camera'),
-                'launch',
-                'rs_launch.py'
-            )
+            os.path.join(pkg_share, 'launch', 'robot_visualization.launch.py')
         ]),
         launch_arguments={
-            'pointcloud.enable': 'true'
+            'use_rviz': use_rviz
         }.items()
     )
-
-    # Add static transform from camera to robot base_link
-    camera_to_robot = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='camera_to_robot',
-        arguments=['0.1', '0', '0.2', '0', '0', '0', 'base_link', 'camera_link']
-    )
     
-    # Launch RViz if enabled
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', os.path.join(pkg_share, 'config', 'realsense_d435.rviz')],
-        condition=IfCondition(use_rviz)
+    # Include the camera launch file
+    camera_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(pkg_share, 'launch', 'camera_only.launch.py')
+        ])
     )
     
     return LaunchDescription([
         use_rviz_arg,
-        robot_description_launch,
-        realsense_launch,
-        camera_to_robot,
-        rviz_node
+        robot_visualization_launch,
+        camera_launch
     ]) 

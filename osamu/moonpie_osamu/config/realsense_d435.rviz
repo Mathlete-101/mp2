@@ -27,7 +27,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.0099999998
       Style: Points
-      Topic: /camera/camera/depth/color/points
+      Topic: /camera1/camera1/depth/color/points
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -63,7 +63,7 @@ Visualization Manager:
       Value: true
   Enabled: true
   Global Options:
-    Fixed Frame: camera_link
+    Fixed Frame: camera1_depth_optical_frame
     Frame Rate: 30
   Tools:
     - Class: rviz_default_plugins/MoveCamera
@@ -87,6 +87,7 @@ Visualization Manager:
 Window Geometry:
   Displays:
     collapsed: false
+    expanded: true
   Height: 600
   Hide Left Dock: false
   Hide Right Dock: false
