@@ -1,0 +1,28 @@
+
+- Ethernet Connection between Raspberry Pi and NUC:
+
+- SLAM and Navigation:
+  - Install required packages:
+    - ROS navigation stack (move_base, amcl)
+    - SLAM packages (gmapping or cartographer)
+  - Configure sensors:
+    - Set up depth camera parameters
+    - Configure laser scan data processing
+  - Create map with SLAM:
+    - Run gmapping to build initial map
+    - Save map using map_server
+  - Navigation setup:
+    - Configure costmaps (global and local)
+    - Tune path planning parameters
+    - Set up recovery behaviors
+  - Test navigation with simple goals
+
+- add system to switch between manual and auto mode
+
+- add documentation
+
+- limit switches control for actuator
+
+- camera view over network
+
+- control node that changes auto dig params for testing
