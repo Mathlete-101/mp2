@@ -10,7 +10,7 @@
       <pose>0 0 0 0 0 0</pose>
     </include>
     <include>
-      <uri>file:///home/moonpie/mp2/sim3/models/four_wheeled_robot</uri>
+      <uri>file://models/four_wheeled_robot</uri>
       <pose>0 0 0.1 0 0 0</pose>
     </include>
 

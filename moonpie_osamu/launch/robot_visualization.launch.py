@@ -34,6 +34,30 @@ def generate_launch_description():
         ])
     )
     
+    # Add static transform from base_link to camera link
+    camera_transform = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='camera_transform',
+        arguments=['0.1', '0', '0.05', '0', '0', '0', 'base_link', 'camera1_link']
+    )
+    
+    # Add static transform from camera link to camera optical frame
+    camera_link_to_optical = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='camera_link_to_optical',
+        arguments=['0', '0', '0', '0', '0', '0', 'camera1_link', 'camera1_depth_optical_frame']
+    )
+    
+    # Add static transform from camera1_link to four_wheeled_robot/camera_link/depth_camera1
+    camera_link_to_sim_camera = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='camera_link_to_sim_camera',
+        arguments=['0', '0', '0', '0', '0', '0', 'camera1_link', 'four_wheeled_robot/camera_link/depth_camera1']
+    )
+    
     # Launch RViz if enabled
     rviz_node = Node(
         package='rviz2',
@@ -46,5 +70,8 @@ def generate_launch_description():
     return LaunchDescription([
         use_rviz_arg,
         robot_description_launch,
+        camera_transform,
+        camera_link_to_optical,
+        camera_link_to_sim_camera,
         rviz_node
     ]) 

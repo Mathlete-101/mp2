@@ -56,3 +56,9 @@ log
 moonpie_lari/install/**/*
 moonpie_lari/build/**/*
 **/*:Zone.Identifier
+
+# Frame visualization files
+frames_*.gv
+frames_*.pdf
+
+.vscode/
