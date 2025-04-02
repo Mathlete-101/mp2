@@ -1,82 +1,26 @@
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess
-from launch_ros.actions import Node
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+import os
 
 def generate_launch_description():
+    # Get the launch directory
+    launch_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Include the camera and control bridge launch files
+    camera_bridge = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(launch_dir, 'camera_bridge_launch.py')
+        ])
+    )
+    
+    control_bridge = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(launch_dir, 'control_bridge_launch.py')
+        ])
+    )
+    
     return LaunchDescription([
-        # Bridge for cmd_vel
-        Node(
-            package='ros_gz_bridge',
-            executable='parameter_bridge',
-            name='cmd_vel_bridge',
-            arguments=[
-                '/cmd_vel@geometry_msgs/msg/Twist@ignition.msgs.Twist',
-                '/model/vehicle_blue/cmd_vel@geometry_msgs/msg/Twist@ignition.msgs.Twist'
-            ],
-            remappings=[
-                ('/cmd_vel', '/cmd_vel'),
-                ('/model/vehicle_blue/cmd_vel', '/model/vehicle_blue/cmd_vel'),
-            ],
-            output='screen',
-            parameters=[{
-                'config_file': '',
-                'qos_overrides./tf_static.publisher.durability': 'transient_local',
-                'qos_overrides./tf_static.publisher.history': 'keep_last',
-                'qos_overrides./tf_static.publisher.reliability': 'reliable',
-                'qos_overrides./tf_static.publisher.depth': 1,
-                'qos_overrides./tf_static.publisher.history_policy': 'keep_last',
-                'qos_overrides./tf_static.publisher.reliable': True,
-                'qos_overrides./tf_static.publisher.transient_local': True,
-            }]
-        ),
-        # Bridge for odometry
-        Node(
-            package='ros_gz_bridge',
-            executable='parameter_bridge',
-            name='odom_bridge',
-            arguments=['/odom@nav_msgs/msg/Odometry@ignition.msgs.Odometry'],
-            remappings=[
-                ('/odom', '/odom'),
-            ],
-            output='screen',
-            parameters=[{
-                'config_file': '',
-                'qos_overrides./tf_static.publisher.durability': 'transient_local',
-                'qos_overrides./tf_static.publisher.history': 'keep_last',
-                'qos_overrides./tf_static.publisher.reliability': 'reliable',
-                'qos_overrides./tf_static.publisher.depth': 1,
-                'qos_overrides./tf_static.publisher.history_policy': 'keep_last',
-                'qos_overrides./tf_static.publisher.reliable': True,
-                'qos_overrides./tf_static.publisher.transient_local': True,
-            }]
-        ),
-        # Teleop keyboard
-        Node(
-            package='topic_tools',
-            executable='relay',
-            name='cmd_vel_relay',
-            parameters=[{
-                'input_topic': '/cmd_vel_raw',
-                'output_topic': '/cmd_vel'
-            }],
-            output='screen'
-        ),
-        Node(
-            package='topic_tools',
-            executable='relay',
-            name='cmd_vel_relay_blue',
-            parameters=[{
-                'input_topic': '/cmd_vel_raw',
-                'output_topic': '/model/vehicle_blue/cmd_vel'
-            }],
-            output='screen'
-        ),
-        Node(
-            package='teleop_twist_keyboard',
-            executable='teleop_twist_keyboard',
-            name='teleop',
-            prefix='xterm -e',
-            output='screen',
-            remappings=[('/cmd_vel', '/cmd_vel_raw')]
-        )
+        camera_bridge,
+        control_bridge
     ]) 
