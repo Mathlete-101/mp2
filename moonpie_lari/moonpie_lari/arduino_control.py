@@ -53,7 +53,12 @@ class ArduinoControl(Node):
             "actuator_extend": False,
             "actuator_retract": False,
             "dpad": {"x": 0, "y": 0},
+            #params -- ignore
+            "Kp": 2.5,
             "Ki": Ki,
+            "dutyA": 100,
+            "dutyB": 100,
+            "dutyC": 100,
         }
 
         self.get_logger().info('Arduino Control Node has started')
@@ -68,8 +73,8 @@ class ArduinoControl(Node):
 
     def joy(self, msg):
         self.message = dict(self.message, **{
-            "dump_belt": msg.buttons[0],
-            "dig_belt": msg.buttons[1],
+            "dump_belt": msg.buttons[1],
+            "dig_belt": msg.buttons[0],
             "actuator_extend": msg.axes[7] < 0,
             "actuator_retract": msg.axes[7] > 0,
             "dpad": {"x": msg.axes[6], "y": msg.axes[7]},
@@ -84,8 +89,8 @@ class ArduinoControl(Node):
 
     def cmd_vel(self, msg):
         self.message = dict(self.message, **{
-            "linearx_mps": msg.linear.x,
-            "angularz_rps": msg.angular.z,
+            "linearx_mps": msg.linear.x * 0.5,
+            "angularz_rps": msg.angular.z * -2,
         })
 
     def write_message(self):
