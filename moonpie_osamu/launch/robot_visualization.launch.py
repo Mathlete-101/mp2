@@ -2,7 +2,8 @@
 This launch file launches the visualization components for the robot and camera data.
 It launches:
 1. The robot state publisher with the robot's URDF description
-2. RViz configured to show both the robot model and camera pointcloud
+2. SLAM Toolbox for mapping
+3. RViz configured to show both the robot model, camera pointcloud, and map
 This is used when you want to visualize the robot without starting the actual camera.
 """
 
@@ -32,6 +33,37 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([
             os.path.join(pkg_share, 'launch', 'robot_description.launch.py')
         ])
+    )
+    
+    # Include the SLAM launch file
+    slam_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(pkg_share, 'launch', 'slam.launch.py')
+        ])
+    )
+    
+    # Add static transform from world to map
+    world_to_map = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='world_to_map',
+        arguments=['0', '0', '0', '0', '0', '0', 'world', 'map']
+    )
+    
+    # Add static transform from map to odom (initial pose)
+    map_to_odom = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='map_to_odom',
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
+    )
+    
+    # Add static transform from odom to base_link (initial pose)
+    odom_to_base_link = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='odom_to_base_link',
+        arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_link']
     )
     
     # Add static transform from base_link to camera link
@@ -70,6 +102,10 @@ def generate_launch_description():
     return LaunchDescription([
         use_rviz_arg,
         robot_description_launch,
+        slam_launch,
+        world_to_map,
+        map_to_odom,
+        odom_to_base_link,
         camera_transform,
         camera_link_to_optical,
         camera_link_to_sim_camera,

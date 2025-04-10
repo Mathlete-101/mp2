@@ -9,6 +9,15 @@ def generate_launch_description():
             executable='arduino_control',
             name='arduino_control'
         ),
+
+        # Launch the Arduino communication node
+        Node(
+            package='moonpie_lari',
+            executable='arduino_comms',
+            name='arduino_comms',
+            output="screen",
+            emulate_tty=True
+        ),
         
         # Launch the IMU node
         Node(

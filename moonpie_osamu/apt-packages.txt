@@ -1,1 +1,12 @@
 ros-humble-image-pipeline
+ros-humble-nav2-map-server
+ros-humble-topic-tools
+ros-humble-rtabmap-ros
+ros-humble-rtabmap-util
+ros-humble-rtabmap-sync
+ros-humble-rtabmap-launch
+ros-humble-rtabmap-viz
+ros-humble-rtabmap-odom
+ros-humble-rtabmap-slam
+ros-humble-rtabmap-conversions
+ros-humble-rtabmap-msgs
