@@ -10,3 +10,5 @@ ros-humble-rtabmap-odom
 ros-humble-rtabmap-slam
 ros-humble-rtabmap-conversions
 ros-humble-rtabmap-msgs
+ros-humble-vision-opencv
+ros-humble-message-filters
