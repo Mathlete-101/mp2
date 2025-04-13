@@ -4,6 +4,7 @@ It launches:
 1. The robot state publisher with the robot's URDF description
 2. SLAM Toolbox for mapping
 3. RViz configured to show both the robot model, camera pointcloud, and map
+4. Image transport nodes to decompress compressed image streams
 This is used when you want to visualize the robot without starting the actual camera.
 """
 
@@ -99,6 +100,29 @@ def generate_launch_description():
         condition=IfCondition(use_rviz)
     )
     
+    # Add image transport nodes to decompress compressed streams
+    color_image_decompress = Node(
+        package='image_transport',
+        executable='republish',
+        name='color_image_decompress',
+        arguments=['compressed', 'raw'],
+        remappings=[
+            ('in', '/camera1/color/image_raw/compressed'),
+            ('out', '/camera1/color/image_raw/decompressed')
+        ]
+    )
+    
+    depth_image_decompress = Node(
+        package='image_transport',
+        executable='republish',
+        name='depth_image_decompress',
+        arguments=['compressedDepth', 'raw'],
+        remappings=[
+            ('in', '/camera1/depth/image_raw/compressedDepth'),
+            ('out', '/camera1/depth/image_raw/decompressed')
+        ]
+    )
+    
     return LaunchDescription([
         use_rviz_arg,
         robot_description_launch,
@@ -109,5 +133,7 @@ def generate_launch_description():
         camera_transform,
         camera_link_to_optical,
         camera_link_to_sim_camera,
-        rviz_node
+        rviz_node,
+        color_image_decompress,
+        depth_image_decompress
     ]) 
