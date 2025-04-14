@@ -51,22 +51,6 @@ def generate_launch_description():
         arguments=['0', '0', '0', '0', '0', '0', 'world', 'map']
     )
     
-    # Add static transform from map to odom (initial pose)
-    map_to_odom = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='map_to_odom',
-        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
-    )
-    
-    # Add static transform from odom to base_link (initial pose)
-    odom_to_base_link = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='odom_to_base_link',
-        arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_link']
-    )
-    
     # Add static transform from base_link to camera link
     camera_transform = Node(
         package='tf2_ros',
@@ -128,8 +112,6 @@ def generate_launch_description():
         robot_description_launch,
         slam_launch,
         world_to_map,
-        map_to_odom,
-        odom_to_base_link,
         camera_transform,
         camera_link_to_optical,
         camera_link_to_sim_camera,
