@@ -26,7 +26,6 @@ setup(
         'console_scripts': [
             'arduino_control = moonpie_lari.arduino_control:main',
             'arduino_comms = moonpie_lari.arduino_comms:main',
-            'beacon_control = moonpie_lari.beacon_control:main'
         ],
     },
 )
