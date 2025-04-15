@@ -40,8 +40,17 @@ def generate_launch_description():
         name='joint_state_publisher',
         output='screen'
     )
+
+    # Create the static transform publisher for the camera
+    static_transform = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='camera1_transform',
+        arguments=['0.2', '0', '0.05', '0', '0', '0', 'base_link', 'camera1_link']
+    )
     
     return LaunchDescription([
         robot_state_publisher,
-        joint_state_publisher
+        joint_state_publisher,
+        static_transform
     ]) 
