@@ -33,7 +33,8 @@ def generate_launch_description():
             os.path.join(pkg_share, 'launch', 'osamu.launch.py')
         ]),
         launch_arguments={
-            'use_rviz': use_rviz
+            'use_rviz': use_rviz,
+            'use_rtabmap_viz': 'True'  # Enable rtabmap_viz for development
         }.items()
     )
     

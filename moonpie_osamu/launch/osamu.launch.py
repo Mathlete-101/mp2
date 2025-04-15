@@ -24,8 +24,16 @@ def generate_launch_description():
     use_rviz = LaunchConfiguration('use_rviz')
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz',
-        default_value='True',
+        default_value='False',
         description='Whether to launch RViz'
+    )
+    
+    # Declare the launch argument for rtabmap_viz
+    use_rtabmap_viz = LaunchConfiguration('use_rtabmap_viz')
+    use_rtabmap_viz_arg = DeclareLaunchArgument(
+        'use_rtabmap_viz',
+        default_value='False',
+        description='Whether to launch rtabmap_viz'
     )
     
     # Include the robot description launch file
@@ -46,7 +54,10 @@ def generate_launch_description():
     slam_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             os.path.join(pkg_share, 'launch', 'slam.launch.py')
-        ])
+        ]),
+        launch_arguments={
+            'use_rtabmap_viz': use_rtabmap_viz
+        }.items()
     )
     
     # Launch RViz if enabled
@@ -60,6 +71,7 @@ def generate_launch_description():
     
     return LaunchDescription([
         use_rviz_arg,
+        use_rtabmap_viz_arg,
         robot_description_launch,
         camera_launch,
         slam_launch,

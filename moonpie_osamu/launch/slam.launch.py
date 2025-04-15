@@ -3,6 +3,7 @@ This launch file launches RTAB-Map for SLAM using a depth camera.
 It launches:
 1. RGBD Synchronization node
 2. RTAB-Map core node configured for depth input
+3. RTAB-Map visualization node (optional)
 """
 
 # Requirements:
@@ -17,10 +18,20 @@ from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
 from launch_ros.actions import Node, SetParameter
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
+    # Declare the launch argument for rtabmap_viz
+    use_rtabmap_viz = LaunchConfiguration('use_rtabmap_viz')
+    use_rtabmap_viz_arg = DeclareLaunchArgument(
+        'use_rtabmap_viz',
+        default_value='False',
+        description='Whether to launch rtabmap_viz'
+    )
+    
     parameters=[{
           'frame_id':'base_link',
           'subscribe_stereo':True,
@@ -49,7 +60,8 @@ def generate_launch_description():
           ('right/camera_info', '/camera1/camera1/infra2/camera_info')]
 
     return LaunchDescription([
-
+        use_rtabmap_viz_arg,
+        
         #Hack to disable IR emitter
         SetParameter(name='depth_module.emitter_enabled', value=0),
 
@@ -67,5 +79,6 @@ def generate_launch_description():
         Node(
             package='rtabmap_viz', executable='rtabmap_viz', output='screen',
             parameters=parameters,
-            remappings=remappings),
+            remappings=remappings,
+            condition=IfCondition(use_rtabmap_viz)),
     ]) 
