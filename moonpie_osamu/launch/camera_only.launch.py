@@ -34,21 +34,6 @@ def generate_launch_description():
         }.items()
     )
 
-    # Add static transform from camera link to base_link
-    camera_to_robot = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='camera_to_robot',
-        arguments=['0.1', '0', '0.2', '0', '0', '0', 'base_link', 'camera1_link']
-    )
-
-    # Add static transform from camera link to camera optical frame
-    camera_link_to_optical = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='camera_link_to_optical',
-        arguments=['0', '0', '0', '0', '0', '0', 'camera_link', 'camera1_depth_frame']
-    )
     
     # Add image transport nodes for color and depth images
     color_image_transport = Node(
@@ -75,8 +60,6 @@ def generate_launch_description():
     
     return LaunchDescription([
         realsense_launch,
-        camera_to_robot,
-        camera_link_to_optical,
         color_image_transport,
         depth_image_transport
     ]) 

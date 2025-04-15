@@ -22,7 +22,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     parameters=[{
-          'frame_id':'camera1_link',
+          'frame_id':'base_link',
           'subscribe_stereo':True,
           'subscribe_odom_info':True}]
 

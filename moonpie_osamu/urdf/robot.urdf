@@ -1,25 +1,8 @@
 <?xml version="1.0"?>
 <robot name="four_wheeled_robot">
-  <!-- Dummy root link with zero inertia -->
-  <link name="world">
-    <visual>
-      <geometry>
-        <box size="0.01 0.01 0.01"/>
-      </geometry>
-      <material name="transparent">
-        <color rgba="0 0 0 0"/>
-      </material>
-    </visual>
-    <collision>
-      <geometry>
-        <box size="0.01 0.01 0.01"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="0.0"/>
-      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
-    </inertial>
-  </link>
+
+  <!-- Add odom link definition -->
+  <link name="odom"/>
 
   <link name="base_link">
     <visual>
@@ -41,9 +24,9 @@
     </inertial>
   </link>
 
-  <!-- Fixed joint connecting world to base_link -->
-  <joint name="world_to_base" type="fixed">
-    <parent link="world"/>
+  <!-- Fixed joint connecting odom to base_link -->
+  <joint name="odom_to_base" type="fixed">
+    <parent link="odom"/>
     <child link="base_link"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
