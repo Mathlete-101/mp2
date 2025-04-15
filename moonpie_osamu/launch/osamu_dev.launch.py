@@ -1,9 +1,9 @@
 """
-This launch file combines the robot visualization with the RealSense camera.
+This launch file is for development purposes.
 It launches:
-1. The robot visualization components (robot state publisher and RViz)
-2. The RealSense D435 camera driver with pointcloud enabled
-This is the main launch file to use when you want to visualize both the robot and camera data.
+1. The osamu.launch.py file which includes robot visualization and camera
+2. The robot_visualization.launch.py file which includes robot visualization without camera
+This is useful for development and testing when you want to have both setups running simultaneously.
 """
 
 from launch import LaunchDescription
@@ -27,6 +27,16 @@ def generate_launch_description():
         description='Whether to launch RViz'
     )
     
+    # Include the osamu launch file
+    osamu_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(pkg_share, 'launch', 'osamu.launch.py')
+        ]),
+        launch_arguments={
+            'use_rviz': use_rviz
+        }.items()
+    )
+    
     # Include the robot visualization launch file
     robot_visualization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -37,15 +47,8 @@ def generate_launch_description():
         }.items()
     )
     
-    # Include the camera launch file
-    camera_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            os.path.join(pkg_share, 'launch', 'camera_only.launch.py')
-        ])
-    )
-    
     return LaunchDescription([
         use_rviz_arg,
-        robot_visualization_launch,
-        camera_launch
+        osamu_launch,
+        robot_visualization_launch
     ]) 

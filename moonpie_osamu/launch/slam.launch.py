@@ -24,7 +24,23 @@ def generate_launch_description():
     parameters=[{
           'frame_id':'base_link',
           'subscribe_stereo':True,
-          'subscribe_odom_info':True}]
+          'subscribe_odom_info':True,
+          'publish_tf':True,
+          'publish_map':True,
+          'publish_grid_map':True,
+          'publish_cloud_map':True,
+          'publish_global_path':True,
+          'cloud_noise_filtering_radius':0.05,
+          'cloud_noise_filtering_min_neighbors':2,
+          'cloud_ceiling_height':2.0,
+          'cloud_floor_height':0.1,
+          'cloud_max_depth':3.0,
+          'cloud_min_depth':0.1,
+          'cloud_voxel_size':0.05,
+          'cloud_output_frame':'map',
+          'cloud_ceiling_filtering':True,
+          'cloud_floor_filtering':True,
+          'cloud_noise_filtering':True}]
 
     remappings=[
           ('left/image_rect', '/camera1/camera1/infra1/image_rect_raw'),

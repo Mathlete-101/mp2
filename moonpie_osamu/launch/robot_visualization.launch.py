@@ -2,9 +2,9 @@
 This launch file launches the visualization components for the robot and camera data.
 It launches:
 1. The robot state publisher with the robot's URDF description
-2. SLAM Toolbox for mapping
-3. RViz configured to show both the robot model, camera pointcloud, and map
-4. Image transport nodes to decompress compressed image streams
+2. RViz configured to show both the robot model, camera pointcloud, and map
+3. Image transport nodes to decompress compressed image streams
+It should not launch the camera or slam nodes. Those should be launched in robot_with_camera.launch.py
 This is used when you want to visualize the robot without starting the actual camera.
 """
 
@@ -33,13 +33,6 @@ def generate_launch_description():
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             os.path.join(pkg_share, 'launch', 'robot_description.launch.py')
-        ])
-    )
-    
-    # Include the SLAM launch file
-    slam_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            os.path.join(pkg_share, 'launch', 'slam.launch.py')
         ])
     )
     
@@ -86,7 +79,6 @@ def generate_launch_description():
     return LaunchDescription([
         use_rviz_arg,
         robot_description_launch,
-        slam_launch,
         camera_link_to_optical,
         rviz_node,
         color_image_decompress,
