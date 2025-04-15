@@ -27,7 +27,10 @@ def generate_launch_description():
         launch_arguments={
             'pointcloud.enable': 'true',
             'camera_name': 'camera1',
-            'camera_namespace': '/camera1'
+            'camera_namespace': '/camera1',
+            'enable_infra1': 'true',
+            'enable_infra2': 'true',
+            'enable_sync': 'true'
         }.items()
     )
 

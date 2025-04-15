@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 import os
 from glob import glob
 
-package_name = 'moonpie-lari'
+package_name = 'moonpie_lari'
 
 setup(
     name=package_name,

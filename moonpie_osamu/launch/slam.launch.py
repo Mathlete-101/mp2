@@ -27,28 +27,15 @@ def generate_launch_description():
           'subscribe_odom_info':True}]
 
     remappings=[
-          ('left/image_rect', '/camera1/infra1/image_rect_raw'),
-          ('left/camera_info', '/camera1/infra1/camera_info'),
-          ('right/image_rect', '/camera1/infra2/image_rect_raw'),
-          ('right/camera_info', '/camera1/infra2/camera_info')]
+          ('left/image_rect', '/camera1/camera1/infra1/image_rect_raw'),
+          ('left/camera_info', '/camera1/camera1/infra1/camera_info'),
+          ('right/image_rect', '/camera1/camera1/infra2/image_rect_raw'),
+          ('right/camera_info', '/camera1/camera1/infra2/camera_info')]
 
     return LaunchDescription([
 
         #Hack to disable IR emitter
         SetParameter(name='depth_module.emitter_enabled', value=0),
-
-        # Launch camera driver
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([os.path.join(
-                get_package_share_directory('realsense2_camera'), 'launch'),
-                '/rs_launch.py']),
-                launch_arguments={'camera_namespace': 'camera1',
-                                  'enable_gyro': 'false',
-                                  'enable_accel': 'false',
-                                  'enable_infra1': 'true',
-                                  'enable_infra2': 'true',
-                                  'enable_sync': 'true'}.items(),
-        ),
 
         Node(
             package='rtabmap_odom', executable='stereo_odometry', output='screen',

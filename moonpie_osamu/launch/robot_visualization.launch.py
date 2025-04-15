@@ -106,7 +106,9 @@ def generate_launch_description():
             ('out', '/camera1/depth/image_raw/decompressed')
         ]
     )
+
     
+
     return LaunchDescription([
         use_rviz_arg,
         robot_description_launch,
