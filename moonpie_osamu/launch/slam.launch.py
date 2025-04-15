@@ -51,13 +51,20 @@ def generate_launch_description():
           'cloud_output_frame':'map',
           'cloud_ceiling_filtering':True,
           'cloud_floor_filtering':True,
-          'cloud_noise_filtering':True}]
+          'cloud_noise_filtering':True,
+          # QoS settings for map topics
+          'qos_map': 'Reliable,Transient',
+          'qos_grid_map': 'Reliable,Transient',
+          'qos_cloud_map': 'Reliable,Transient'}]
 
     remappings=[
           ('left/image_rect', '/camera1/camera1/infra1/image_rect_raw'),
           ('left/camera_info', '/camera1/camera1/infra1/camera_info'),
           ('right/image_rect', '/camera1/camera1/infra2/image_rect_raw'),
-          ('right/camera_info', '/camera1/camera1/infra2/camera_info')]
+          ('right/camera_info', '/camera1/camera1/infra2/camera_info'),
+          # Remap grid_map to map for navigation
+          ('grid_map', 'map'),
+          ('grid_map_updates', 'map_updates')]
 
     return LaunchDescription([
         use_rtabmap_viz_arg,

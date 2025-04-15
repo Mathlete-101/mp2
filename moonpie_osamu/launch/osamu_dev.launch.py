@@ -44,7 +44,7 @@ def generate_launch_description():
             os.path.join(pkg_share, 'launch', 'robot_visualization.launch.py')
         ]),
         launch_arguments={
-            'use_rviz': use_rviz
+            'use_rviz': 'False'  # Disable RViz in this launch file to avoid duplicate windows
         }.items()
     )
     
