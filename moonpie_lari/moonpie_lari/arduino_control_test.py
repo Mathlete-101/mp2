@@ -22,12 +22,16 @@ DUMP_ROTATE_PERIOD_S = 0.5
 ACTUATOR_RETRACT_S = 7
 DRIVE_AND_DIG_SPEED_MPS = 0.1
 
+UPDATE_EVERY_MESSAGE = 3
+
 Kp = 2.5
 Ki = 0.5
 extend_speed = 50
 retract_speed = 100
 dig_speed = 100
 dump_speed = 100
+
+
 
 class ArduinoControl(Node):
     def serial_logger(self):
@@ -85,6 +89,8 @@ class ArduinoControl(Node):
             # not used
             "dpad": {"x": 0, "y": 0}, # x=1: kill, x=-1: start autonomy
         }
+        # track messages sent, get update every UPDATE_EVERY_MESSAGE
+        self.message_count = 0
 
         self.get_logger().info('Arduino Control Node has started')
 
@@ -155,13 +161,16 @@ class ArduinoControl(Node):
         if self.autonomous_active:
             self.run_autonomous()
 
-        if self.send_mode == 0:
-            cmd = json.dumps(self.message).encode() + b"\n"
-            self.send_mode = 0
+        self.message_count += 1
 
-        #request data. this strat is probably bad
-        elif self.send_mode == 1:
-            cmd = b'{"cmd": false, "drive_train": {"set_angularz_rps": null, "set_linearx_mps": null}, "actuator": {"get_state": null}, "dig_belt": {"get_state": null}, "dump_belt": {"get_state": null}}\n'
+        if self.send_mode == 0:
+            # get an update every UPDATE_EVERY_MESSAGE messages sent
+            if self.message_count % UPDATE_EVERY_MESSAGE == 0:
+                self.message["cmd"] = False
+            else:
+                self.message["cmd"] = False
+
+            cmd = json.dumps(self.message).encode() + b"\n"
             self.send_mode = 0
         else:
             self.get_logger().error("invalid send mode")

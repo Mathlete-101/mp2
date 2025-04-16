@@ -102,10 +102,11 @@ void processJson(String jsonString) {
 
     if (doc.containsKey("cmd")) {
       cmd = doc["cmd"];
-      if (cmd) {
-        executeCommand(jsonString);
-      }
-      else {
+      // execute the command
+      executeCommand(jsonString);
+      
+      // if cmd is false, send a system update
+      if (!cmd)
         createUpdate(jsonString);
       }
     }
