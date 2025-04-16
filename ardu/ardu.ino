@@ -1,7 +1,7 @@
-#include "utils\Actuator.hpp"
-#include "utils\DumpingBelt.hpp"
-#include "utils\DiggingBelt.hpp"
-#include "utils\DriveTrain.hpp"
+#include "utils/Actuator.hpp"
+#include "utils/DumpingBelt.hpp"
+#include "utils/DiggingBelt.hpp"
+#include "utils/DriveTrain.hpp"
 #include <ArduinoJson.h>
 
 // use initalize function in sketch to confirm initialization
@@ -106,7 +106,7 @@ void processJson(String jsonString) {
       executeCommand(jsonString);
       
       // if cmd is false, send a system update
-      if (!cmd)
+      if (!cmd) {
         createUpdate(jsonString);
       }
     }
