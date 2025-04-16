@@ -69,6 +69,7 @@ class DriveTrain {
     void stop();
 
     private:
+        double prev_pos_m[4] = {0};  // Previous position in counts for each wheel
 
     /// @brief convert RPM to m/s
     /// @param rpm wheel speed in RPM

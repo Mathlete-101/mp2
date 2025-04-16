@@ -27,6 +27,11 @@ fi
 
 echo "Using arduino-cli at: $ARDUINO_CLI"
 
-# Compile and upload
-$ARDUINO_CLI compile --fqbn arduino:avr:mega ardu
-$ARDUINO_CLI upload -p --fqbn arduino:avr:mega /dev/ttyACM0 ardu --verbose
+# Compile
+if ! $ARDUINO_CLI compile --fqbn arduino:avr:mega ardu; then
+    echo "Compilation failed"
+    exit 1
+fi
+
+# Upload
+$ARDUINO_CLI upload --fqbn arduino:avr:mega --port /dev/ttyACM0 ardu --verbose
