@@ -22,6 +22,13 @@ DUMP_ROTATE_PERIOD_S = 0.5
 ACTUATOR_RETRACT_S = 7
 DRIVE_AND_DIG_SPEED_MPS = 0.1
 
+Kp = 2.5
+Ki = 0.5
+extend_speed = 50
+retract_speed = 100
+dig_speed = 100
+dump_speed = 100
+
 class ArduinoControl(Node):
     def serial_logger(self):
         class p:
@@ -69,14 +76,14 @@ class ArduinoControl(Node):
             "actuator_retract": False,
             
             #params -- ignore
-            #"Kp": 0.75,
-            #"Ki": 0.02,
-            #"dutyA": 50,
-            #"dutyB": 60,
-            #"dutyC": 40,
+            "Kp": Kp,
+            "Ki": Ki,
+            #"dutyA": {"extend_speed": extend_speed, "retract_speed": retract_speed},   # actuators speeds
+            #"dutyB": dig_speed,                                          # dig belt speed
+            #"dutyD": dump_speed,                                          # dump belt speed
             
-            #dont use
-            "dpad": {"x": 0, "y": 0},
+            # not used
+            "dpad": {"x": 0, "y": 0}, # x=1: kill, x=-1: start autonomy
         }
 
         self.get_logger().info('Arduino Control Node has started')
@@ -170,16 +177,18 @@ class ArduinoControl(Node):
         self.autonomous_active = True
         self.autonomous_start_time = time.time()
         self.message["actuator_extend"] = True
-        self.message["dig_belt"] = 1
+        self.message["dig_belt"] = True
+        self.message["Ki"] = 0                          # no integral control term while autonomous (are encoders actually working???)
         self.dump_belt_last_time = time.time()
 
     def kill_autonomous(self):
         self.get_logger().info("Autonomous process killed")
         self.autonomous_active = False
         self.message["actuator_extend"] = False
-        self.message["dig_belt"] = 0
+        self.message["dig_belt"] = False
         self.message["linearx_mps"] = 0.0
-        self.message["dump_belt"] = 0
+        self.message["dump_belt"] = False
+        self.message["Ki"] = Ki                         # reinstate Ki for remote control
         self.message["actuator_retract"] = False
 
     # extends actuator with dig belt on, drives forward with dig belt on and rotates dump belt periodically, stops driving and dig belt and retracts actuator
