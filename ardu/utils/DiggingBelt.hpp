@@ -97,6 +97,9 @@ void DiggingBelt::update() {
             lastUpdateTime = currentTime;
         }
     }
+    else {
+        currentSpeedRPM = 0;
+    }
 }
 
 void DiggingBelt::start() {
