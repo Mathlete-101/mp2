@@ -50,6 +50,14 @@ class DumpingBelt {
     /// @brief stop the conveyor belt
     void stop();
 
+    /// @brief get current speed in RPM
+    /// @return speed in RPM
+    double getCurrentSpeedRPM();
+
+    /// @brief check if belt is in error state
+    /// @return true if in error state
+    bool isError();
+
     private:
     int pwm = -255;                   // driving dump belt correct direction
     int numLoadsOnBelt = 0;
@@ -57,8 +65,13 @@ class DumpingBelt {
     bool rotatingForLoads = false;
     bool rotatingForTime = false;
     bool dumping = false;
+    bool errorState = false;
+    double currentSpeedRPM = 0;
     long startTime = 0;
     long duration = 0;
+    long lastEncoderCount = 0;
+    long lastUpdateTime = 0;
+    const long MOVEMENT_TIMEOUT_MS = 5000; // 5 second timeout for movement
 
     CytronMD dumpBeltMTR = CytronMD(PWM_DIR, CNVB_MTR_PWM, CNVB_MTR_DIR);
     Encoder dumpBeltENC = Encoder(CNVB_ENC_A, CNVB_ENC_B);
@@ -106,6 +119,8 @@ int DumpingBelt::getNumLoadsOnBelt() {
 
 void DumpingBelt::remoteControl(bool dumpBeltOn) {
     if (dumpBeltOn) {
+        errorState = false;
+        startTime = millis();
         dumpBeltMTR.setSpeed(pwm);
         dumping = true;
     }
@@ -127,7 +142,26 @@ int DumpingBelt::getState() {
 }
 
 void DumpingBelt::update() {
+    long currentTime = millis();
     long currentCount = dumpBeltENC.read();
+
+    // Update speed calculation
+    if (currentTime - lastUpdateTime >= SAMPLE_TIME_MS) {
+        double deltaCounts = currentCount - lastEncoderCount;
+        double dt_ms = currentTime - lastUpdateTime;
+        currentSpeedRPM = (deltaCounts / ENC_CNT_PER_REV_DUMP) * (60000.0 / dt_ms);
+        lastEncoderCount = currentCount;
+        lastUpdateTime = currentTime;
+
+        // Check for movement timeout
+        if ((rotatingForLoads || rotatingForTime || dumping) && 
+            (currentTime - startTime > MOVEMENT_TIMEOUT_MS) && 
+            abs(currentSpeedRPM) < 1.0) { // If moving very slowly or not at all
+            errorState = true;
+            stop();
+            return;
+        }
+    }
 
     if (dumping) {
         if (abs(currentCount) >= HALF_ROTATION_CNV_BELT) {
@@ -149,15 +183,21 @@ void DumpingBelt::update() {
         }
         return;
     }
-    // TO DO: track how far the belt rotated, inc loads, and determine if it dumped or not??
     if (rotatingForTime) {
-        long currentTime = millis();
         if (currentTime - startTime >= duration) {
             dumpBeltMTR.setSpeed(0);
             rotatingForTime = false;
         }
         return;
     }
+}
+
+double DumpingBelt::getCurrentSpeedRPM() {
+    return currentSpeedRPM;
+}
+
+bool DumpingBelt::isError() {
+    return errorState;
 }
 
 void DumpingBelt::stop() {
@@ -167,5 +207,6 @@ void DumpingBelt::stop() {
     dumping = false;
     rotatingForLoads = false;
     rotatingForTime = false;
+    currentSpeedRPM = 0;
 }
 

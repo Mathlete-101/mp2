@@ -70,6 +70,20 @@ class DriveTrain {
 
     private:
 
+    /// @brief convert RPM to m/s
+    /// @param rpm wheel speed in RPM
+    /// @return speed in m/s
+    double rpmToMPS(double rpm) {
+        return (rpm * 2.0 * PI * WHEEL_RADIUS_M) / 60.0;
+    }
+
+    /// @brief convert m/s to RPM
+    /// @param mps speed in m/s
+    /// @return wheel speed in RPM
+    double mpsToRPM(double mps) {
+        return (mps * 60.0) / (2.0 * PI * WHEEL_RADIUS_M);
+    }
+
     /// @brief calculate the wheel speed for each wheel based on given velocities
     void calculateWheelSpeed();
 
@@ -107,8 +121,6 @@ class DriveTrain {
     double actual_wheel_speed[4] = {0};
     long last_time_ms[4] = {0};
     long encCount[4] = {0};
-    long pos_m[4] = {0};
-    long prev_pos_m[4] = {0};
     double Voltage[4] = {0};
     double error[4] = {0};
     double integral_error[4] = {0};
@@ -118,10 +130,11 @@ class DriveTrain {
         CytronMD(PWM_DIR, RIGHT_B_PWM, RIGHT_B_DIR), 
         CytronMD(PWM_DIR, LEFT_B_PWM, LEFT_B_DIR)};
 
-    Encoder encoders[4] = {Encoder(ENCR_A_FR, ENCR_B_FR), 
-        Encoder(ENCR_A_FL, ENCR_B_FL), 
-        Encoder(ENCR_A_BR, ENCR_B_BR), 
-        Encoder(ENCR_A_BL, ENCR_B_BL)};
+    // Individual encoder instances instead of array
+    Encoder encoderFR = Encoder(ENCR_A_FR, ENCR_B_FR);
+    Encoder encoderFL = Encoder(ENCR_A_FL, ENCR_B_FL);
+    Encoder encoderBR = Encoder(ENCR_A_BR, ENCR_B_BR);
+    Encoder encoderBL = Encoder(ENCR_A_BL, ENCR_B_BL);
 };
 
 #endif
@@ -129,9 +142,15 @@ class DriveTrain {
 DriveTrain::DriveTrain() {
     for (int i=0; i<4; i++) {
         motors[i].setSpeed(0);
-        encoders[i].readAndReset();
+    }
+    // Reset individual encoders
+    encoderFR.readAndReset();
+    encoderFL.readAndReset();
+    encoderBR.readAndReset();
+    encoderBL.readAndReset();
 
-        // init time
+    // init time
+    for (int i=0; i<4; i++) {
         last_time_ms[i] = millis();
     }
 }
@@ -181,14 +200,28 @@ void DriveTrain::update() {
 
     if (current_time_ms - last_time_ms[0] >= SAMPLE_TIME_MS) {
         for (i=0; i<4; i++) {
-            //current_time_ms = millis(); // update for every motor
+            // Read appropriate encoder based on index
+            switch(i) {
+                case 0: // Front Right
+                    encCount[i] = encoderFR.read();
+                    break;
+                case 1: // Front Left
+                    encCount[i] = encoderFL.read();
+                    break;
+                case 2: // Back Right
+                    encCount[i] = encoderBR.read();
+                    break;
+                case 3: // Back Left
+                    encCount[i] = encoderBL.read();
+                    break;
+            }
 
-            encCount[i] = encoders[i].read(); // get new encoder count
-
-            pos_m[i] = countsToMeters(encCount[i]);
-
-            actual_wheel_speed[i] = (pos_m[i] - prev_pos_m[i]) / ((current_time_ms - last_time_ms[i]) / 1000.0); // calculate speed rad/s
-            prev_pos_m[i] = pos_m[i]; // update position
+            // Calculate speed in RPM first, then convert to m/s for consistency
+            double deltaCounts = encCount[i] - prev_pos_m[i];
+            double dt_ms = current_time_ms - last_time_ms[i];
+            double rpm = (deltaCounts / ENC_CNT_PER_REV) * (60000.0 / dt_ms);
+            actual_wheel_speed[i] = rpmToMPS(rpm);
+            prev_pos_m[i] = encCount[i]; // update position
 
             // update error
             error[i] = desired_wheel_speed[i] - actual_wheel_speed[i];
@@ -317,7 +350,7 @@ void DriveTrain::calculateActualSpeed() {
 
 
 double DriveTrain::countsToMeters(long enc_counts) {
-    double theta = 2 * PI * (double) enc_counts / ENC_CNT_PER_REV; // convert to radians
-    return theta * WHEEL_RADIUS_M;  // convert to meters
+    // Convert encoder counts to meters using wheel radius and counts per revolution
+    return (static_cast<double>(enc_counts) / ENC_CNT_PER_REV) * (2.0 * PI * WHEEL_RADIUS_M);
 }
 
