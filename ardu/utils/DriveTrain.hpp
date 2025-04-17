@@ -342,11 +342,12 @@ void DriveTrain::calculateWheelSpeed() {
 }
 
 void DriveTrain::calculateActualSpeed() {
-    double actual_v_R = (actual_wheel_speed[0] + actual_wheel_speed[2]) / 2.0 * WHEEL_RADIUS_M;  // Right side average speed (m/s)
+    // Right side encoders spin in opposite direction, so we need to negate their speeds
+    double actual_v_R = (-actual_wheel_speed[0] - actual_wheel_speed[2]) / 2.0 * WHEEL_RADIUS_M;  // Right side average speed (m/s)
     double actual_v_L = (actual_wheel_speed[1] + actual_wheel_speed[3]) / 2.0 * WHEEL_RADIUS_M;  // Left side average speed (m/s)
 
     actual_speed_mps = (actual_v_R + actual_v_L) / 2.0; // Linear speed (m/s)
-    actual_angular_speed_rps = (actual_v_R - actual_v_L) / TRACK_WIDTH_M; // Angular speed (rad/s)
+    actual_angular_speed_rps = -(actual_v_R - actual_v_L) / TRACK_WIDTH_M; // Angular speed (rad/s), negated to correct sign
 }
 
 
