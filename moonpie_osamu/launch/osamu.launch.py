@@ -1,9 +1,10 @@
 """
-This launch file combines the robot visualization with the RealSense camera.
+This launch file combines the robot visualization with the RealSense camera and navigation.
 It launches:
 1. The robot visualization components (robot state publisher and RViz)
 2. The RealSense D435 camera driver with pointcloud enabled
 3. SLAM nodes for mapping
+4. Navigation stack
 This is the main launch file to use when you want to visualize both the robot and camera data with SLAM.
 """
 
@@ -59,6 +60,13 @@ def generate_launch_description():
             'use_rtabmap_viz': use_rtabmap_viz
         }.items()
     )
+
+    # Include the navigation launch file
+    navigation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(pkg_share, 'launch', 'navigation.launch.py')
+        ])
+    )
     
     # Launch RViz if enabled
     rviz_node = Node(
@@ -75,5 +83,6 @@ def generate_launch_description():
         robot_description_launch,
         camera_launch,
         slam_launch,
+        navigation_launch,
         rviz_node
     ]) 
