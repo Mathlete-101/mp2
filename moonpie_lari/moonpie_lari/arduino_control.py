@@ -49,13 +49,17 @@ class ArduinoControl(Node):
             "actuator_retract": False,
             
             #params -- ignore
-            "Kp": 2.5,
-            "Ki": 0.5,
-            "dutyA": 100,
-            "dutyB": 100,
-            "dutyC": 100,
+            # "Kp": 2.5,
+            # "Ki": 0.5,
+            # "dutyA": {
+            #     "extend_speed":50,
+            #     "retract_speed":100,
+            # },
+            # "dutyB": 100,
+            # "dutyC": 100,
+            # "fan_speed": 50,
             
-            #dont use
+            #kill or start autonomy
             "dpad": {"x": 0, "y": 0},
         }
 

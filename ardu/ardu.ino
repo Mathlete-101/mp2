@@ -2,6 +2,7 @@
 #include "utils/DumpingBelt.hpp"
 #include "utils/DiggingBelt.hpp"
 #include "utils/DriveTrain.hpp"
+#include "utils/Fan.hpp"
 #include <ArduinoJson.h>
 
 // use initalize function in sketch to confirm initialization
@@ -9,6 +10,7 @@ Actuator actuator;
 DumpingBelt dumpBelt;
 DiggingBelt digBelt;
 DriveTrain driveTrain;
+Fan fan;
 
 
 double desired_speed_mps = 0.0;
@@ -162,6 +164,9 @@ void executeCommand(String command) {
      if (doc.containsKey("dutyB")) {
       digBelt.setPWM(doc["dutyB"]);
     }
+    if (doc.containsKey("fan_speed")) {
+      fan.setSpeed(doc["fan_speed"]);
+    }
 }
 
 void createUpdate(String updateRequest) {
@@ -198,6 +203,10 @@ void createUpdate(String updateRequest) {
   dump_belt_response["get_pwm"] = dumpBelt.getPWM();
   dump_belt_response["get_loads"] = dumpBelt.getNumLoadsOnBelt();
   dump_belt_response["get_full"] = dumpBelt.isFull();
+
+  // fan updates
+  JsonObject fan_response = response.createNestedObject("fan");
+  fan_response["get_speed"] = fan.getSpeed();
 
   String updateResponse;
   serializeJson(response, updateResponse);
