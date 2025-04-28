@@ -44,6 +44,10 @@ class Actuator {
         /// @return pwm
         int getPWMRetract();
 
+        /// @brief check if the limit switch is activated
+        /// @return true if limit switch is activated (pressed)
+        bool isLimitSwitchActivated();
+
     private:
         int pwmExtend = 127;
         int pwmRetract = 255;
@@ -62,6 +66,11 @@ class Actuator {
 
 Actuator::Actuator() {
     actuatorMTR.setSpeed(0);
+    pinMode(LM_SW_1, INPUT_PULLUP);  // Initialize limit switch with internal pullup
+}
+
+bool Actuator::isLimitSwitchActivated() {
+    return digitalRead(LM_SW_1) == LOW;  // Active low due to pullup
 }
 
 void Actuator::remoteControl(bool extend, bool retract) {
@@ -71,7 +80,7 @@ void Actuator::remoteControl(bool extend, bool retract) {
         isExtending = false;
         isRetracting = false;
     }
-    else if (extend) {
+    else if (extend && !isLimitSwitchActivated()) {  // Only extend if limit switch not activated
         actuatorMTR.setSpeed(pwmExtend);
         isExtending = true;
         isRetracting = false;
@@ -87,7 +96,13 @@ void Actuator::remoteControl(bool extend, bool retract) {
         isRetracting = false;
     }
 }
+
 void Actuator::extendForTimeMS(long timeExtendMS) {
+    if (isLimitSwitchActivated()) {  // Don't extend if limit switch is activated
+        stop();
+        return;
+    }
+    
     isExtending = true;
     extended = false;  // Reset state
     retracted = false; // Ensure retracted flag is cleared

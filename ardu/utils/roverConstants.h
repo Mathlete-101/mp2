@@ -1,5 +1,3 @@
-
-
 #ifndef ROVERCONSTANTS_H
 #define ROVERCONSTANTS_H
 
@@ -51,6 +49,7 @@
 
 #define ACT_MTR_PWM 11        
 #define ACT_MTR_DIR 15 
+#define ACT_LIMIT_SW 13  // Limit switch pin for actuator
 
 #define DB_MTR_PWM 10         
 #define DB_MTR_DIR 14 

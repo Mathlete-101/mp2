@@ -44,6 +44,13 @@ class ArduinoComms(Node):
             10
         )
 
+        # Create publisher for Arduino status
+        self.arduino_status_publisher = self.create_publisher(
+            String,
+            'arduino_status',
+            10
+        )
+
         self.message_queue = Queue()
 
         def ard_msg_thread(ctrl, msg, log, conn):
@@ -67,13 +74,16 @@ class ArduinoComms(Node):
     def arduino_command_callback(self, msg):
         self.message_queue.put(msg.data)
 
-    # print what arduino sends
+    # print what arduino sends and publish it
     def publish_messages(self):
         while not self.amt_msg.empty():
             msg = self.amt_msg.get().decode()
             try:
                 result = json.loads(msg)
-                #publish whatever messages need to be published
+                # Publish the Arduino status message
+                status_msg = String()
+                status_msg.data = msg
+                self.arduino_status_publisher.publish(status_msg)
             except:
                 self.get_logger().info(f"arduino: {msg}")
     
