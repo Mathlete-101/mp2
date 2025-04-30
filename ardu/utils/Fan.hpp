@@ -19,7 +19,7 @@ class Fan {
         void stop();
 
     private:
-        int currentSpeed = 50;  // Default speed of 50%
+        int currentSpeed = 45;  // Default speed of 45%
 };
 
 #endif

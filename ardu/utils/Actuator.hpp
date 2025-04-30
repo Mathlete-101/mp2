@@ -66,11 +66,11 @@ class Actuator {
 
 Actuator::Actuator() {
     actuatorMTR.setSpeed(0);
-    pinMode(LM_SW_1, INPUT_PULLUP);  // Initialize limit switch with internal pullup
+    pinMode(LM_SW_2, INPUT_PULLUP);  // Initialize limit switch with internal pullup
 }
 
 bool Actuator::isLimitSwitchActivated() {
-    return digitalRead(LM_SW_1) == LOW;  // Active low due to pullup
+    return digitalRead(LM_SW_2) == LOW;  // Active high due to pullup
 }
 
 void Actuator::remoteControl(bool extend, bool retract) {
@@ -80,7 +80,7 @@ void Actuator::remoteControl(bool extend, bool retract) {
         isExtending = false;
         isRetracting = false;
     }
-    else if (extend && !isLimitSwitchActivated()) {  // Only extend if limit switch not activated
+    else if (extend && isLimitSwitchActivated()) {  // Only extend if limit switch not activated
         actuatorMTR.setSpeed(pwmExtend);
         isExtending = true;
         isRetracting = false;
@@ -140,7 +140,7 @@ void Actuator::update() {
 
 int Actuator::getState() {
     if (isExtending) return 0;
-    if (extended) return 1;
+    if (isLimitSwitchActivated) return 1;
     if (isRetracting) return 2;
     if (retracted) return 3;
     return -1; 
