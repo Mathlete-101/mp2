@@ -18,15 +18,18 @@ import json
 # After driving and digging, the rover will stop, then retract the dig belt for time with the dig belt on
 # Everything stops
 
-ACTUATOR_EXTEND_S = 2
+ACTUATOR_EXTEND_S = 6.7
+#ACTUATOR_EXTEND_S = 6.8
 DRIVE_FORWARD_S = 20
-DUMP_ROTATE_EVERY_S = 5
+DUMP_ROTATE_EVERY_S = 10
 DUMP_ROTATE_PERIOD_S = 1
 ACTUATOR_RETRACT_S = 4
-DRIVE_AND_DIG_SPEED_MPS = 0.05
+DRIVE_AND_DIG_SPEED_MPS = 0.075
+#DRIVE_AND_DIG_SPEED_MPS = 0.1
 
 # for autonomy, Ki must be small or the rover will slowly increase speed 
-Ki = 0.05
+Ki = 0.2
+Kp = 4
 
 class ArduinoControl(Node):
     def __init__(self):
@@ -54,8 +57,8 @@ class ArduinoControl(Node):
             "actuator_retract": False,
             "dpad": {"x": 0, "y": 0},
             #params -- ignore
-#            "Kp": 2.5,
-#            "Ki": Ki,
+            "Kp": Kp,
+            "Ki": Ki,
 #            "dutyA": 100,
 #            "dutyB": 100,
 #            "dutyC": 100,
