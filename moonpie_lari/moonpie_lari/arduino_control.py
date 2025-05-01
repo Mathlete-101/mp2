@@ -2,6 +2,8 @@
 # manages remote control inputs and builds commands for arduino
 # automated digging operation
 import time
+from queue import Queue
+from threading import Thread
 from sensor_msgs.msg import Joy
 import rclpy
 from rclpy.node import Node
@@ -22,6 +24,9 @@ DUMP_ROTATE_EVERY_S = 5
 DUMP_ROTATE_PERIOD_S = 1
 ACTUATOR_RETRACT_S = 4
 DRIVE_AND_DIG_SPEED_MPS = 0.05
+
+# for autonomy, Ki must be small or the rover will slowly increase speed 
+Ki = 0.05
 
 class ArduinoControl(Node):
     def __init__(self):
@@ -47,20 +52,13 @@ class ArduinoControl(Node):
             "dig_belt": 0,
             "actuator_extend": False,
             "actuator_retract": False,
-            
-            #params -- ignore
-            # "Kp": 2.5,
-            # "Ki": 0.5,
-            # "dutyA": {
-            #     "extend_speed":50,
-            #     "retract_speed":100,
-            # },
-            # "dutyB": 100,
-            # "dutyC": 100,
-            # "fan_speed": 50,
-            
-            #kill or start autonomy
             "dpad": {"x": 0, "y": 0},
+            #params -- ignore
+#            "Kp": 2.5,
+#            "Ki": Ki,
+#            "dutyA": 100,
+#            "dutyB": 100,
+#            "dutyC": 100,
         }
 
         self.get_logger().info('Arduino Control Node has started')
@@ -75,8 +73,8 @@ class ArduinoControl(Node):
 
     def joy(self, msg):
         self.message = dict(self.message, **{
-            "dump_belt": msg.buttons[0],
-            "dig_belt": msg.buttons[1],
+            "dump_belt": msg.buttons[1],
+            "dig_belt": msg.buttons[0],
             "actuator_extend": msg.axes[7] < 0,
             "actuator_retract": msg.axes[7] > 0,
             "dpad": {"x": msg.axes[6], "y": msg.axes[7]},
@@ -91,8 +89,8 @@ class ArduinoControl(Node):
 
     def cmd_vel(self, msg):
         self.message = dict(self.message, **{
-           "linearx_mps": msg.linear.x * 0.5,
-           "angularz_rps": msg.angular.z * -2,
+            "linearx_mps": msg.linear.x * 0.5,
+            "angularz_rps": msg.angular.z * -2,
         })
 
     def write_message(self):
@@ -123,7 +121,7 @@ class ArduinoControl(Node):
         self.message["dig_belt"] = 1
         self.dump_belt_last_time = time.time() 
 
-    # stop everything in autonomy and exit auto mode
+    # stop everything in autonomy and exit auto mdoe
     def kill_autonomous(self):
         self.get_logger().info("Autonomous process killed")
         self.autonomous_active = False

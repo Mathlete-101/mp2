@@ -42,46 +42,6 @@ For more information, please refer to https://unlicense.org/
   <depend>geometry_msgs</depend>
   <exec_depend>python3-serial</exec_depend>
 
-  <!-- Navigation dependencies -->
-  <depend>nav2_msgs</depend>
-  <depend>slam_toolbox</depend>
-  <depend>nav2_bringup</depend>
-  <depend>nav2_common</depend>
-  <depend>nav2_controller</depend>
-  <depend>nav2_core</depend>
-  <depend>nav2_costmap_2d</depend>
-  <depend>nav2_dwb_core</depend>
-  <depend>nav2_msgs</depend>
-  <depend>nav2_navfn_planner</depend>
-  <depend>nav2_planner</depend>
-  <depend>nav2_util</depend>
-  <depend>nav2_voxel_grid</depend>
-  <depend>nav2_behavior_tree</depend>
-  <depend>nav2_lifecycle_manager</depend>
-  <depend>nav2_bt_navigator</depend>
-  <depend>nav2_velocity_smoother</depend>
-  <depend>nav2_amcl</depend>
-  <depend>tf2</depend>
-  <depend>tf2_ros</depend>
-  <depend>tf2_geometry_msgs</depend>
-  <depend>tf2_sensor_msgs</depend>
-  <depend>sensor_msgs</depend>
-  <depend>realsense2_camera_msgs</depend>
-  <depend>realsense2_description</depend>
-  <depend>robot_localization</depend>
-
-  <!-- Simulation dependencies -->
-  <depend>gazebo_ros</depend>
-  <depend>gazebo_ros2_control</depend>
-  <depend>gazebo_ros_pkgs</depend>
-  <depend>robot_state_publisher</depend>
-  <depend>joint_state_publisher</depend>
-  <depend>ros2_control</depend>
-  <depend>ros2_control_test_nodes</depend>
-  <depend>controller_manager</depend>
-  <depend>controller_manager_msgs</depend>
-  <depend>xacro</depend>
-
   <export>
     <build_type>ament_python</build_type>
   </export>
