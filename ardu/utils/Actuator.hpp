@@ -140,7 +140,7 @@ void Actuator::update() {
 
 int Actuator::getState() {
     if (isExtending) return 0;
-    if (isLimitSwitchActivated) return 1;
+    if (isLimitSwitchActivated()) return 1;
     if (isRetracting) return 2;
     if (retracted) return 3;
     return -1; 
