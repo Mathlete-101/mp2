@@ -74,6 +74,7 @@ def generate_launch_description():
             'recoveries_server': 'true',
             'bt_navigator': 'true',
             'waypoint_follower': 'true',
+            'use_rviz': 'false',  # Disable RViz since we're launching it separately
         }.items())
 
     ld.add_action(nav2_bringup_cmd)

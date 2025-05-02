@@ -27,7 +27,7 @@ def generate_launch_description():
         description='Whether to launch RViz'
     )
     
-    # Include the osamu launch file
+    # Include the osamu launch file with RViz enabled
     osamu_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             os.path.join(pkg_share, 'launch', 'osamu.launch.py')
@@ -38,13 +38,13 @@ def generate_launch_description():
         }.items()
     )
     
-    # Include the robot visualization launch file
+    # Include the robot visualization launch file with RViz disabled
     robot_visualization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             os.path.join(pkg_share, 'launch', 'robot_visualization.launch.py')
         ]),
         launch_arguments={
-            'use_rviz': 'False'  # Disable RViz in this launch file to avoid duplicate windows
+            'use_rviz': 'False'  # Explicitly disable RViz in this launch file
         }.items()
     )
     

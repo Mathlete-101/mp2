@@ -73,15 +73,16 @@ def generate_launch_description():
         SetParameter(name='depth_module.emitter_enabled', value=0),
 
         Node(
-            package='rtabmap_odom', executable='stereo_odometry', output='screen',
-            parameters=parameters,
-            remappings=remappings),
-
-        Node(
-            package='rtabmap_slam', executable='rtabmap', output='screen',
+            package='rtabmap_odom', executable='stereo_odometry', output='log',
             parameters=parameters,
             remappings=remappings,
-            arguments=['-d']),
+            arguments=['--ros-args', '--log-level', 'stereo_odometry:=warn']),
+
+        Node(
+            package='rtabmap_slam', executable='rtabmap', output='log',
+            parameters=parameters,
+            remappings=remappings,
+            arguments=['-d', '--ros-args', '--log-level', 'rtabmap:=warn']),
 
         Node(
             package='rtabmap_viz', executable='rtabmap_viz', output='screen',
