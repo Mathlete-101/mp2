@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Please keep rebuilding the project and fixing bugs until it builds correctly.

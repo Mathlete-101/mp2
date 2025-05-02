@@ -1,5 +1,4 @@
 ros-humble-image-pipeline
-ros-humble-nav2-map-server
 ros-humble-topic-tools
 ros-humble-rtabmap-ros
 ros-humble-rtabmap-util

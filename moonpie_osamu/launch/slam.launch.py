@@ -62,7 +62,7 @@ def generate_launch_description():
           ('left/camera_info', '/camera1/camera1/infra1/camera_info'),
           ('right/image_rect', '/camera1/camera1/infra2/image_rect_raw'),
           ('right/camera_info', '/camera1/camera1/infra2/camera_info'),
-          # Remap grid_map to map for navigation
+          # Remap grid_map to map
           ('grid_map', 'map'),
           ('grid_map_updates', 'map_updates')]
 
