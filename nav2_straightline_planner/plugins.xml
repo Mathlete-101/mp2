@@ -1,0 +1,5 @@
+<library path="nav2_straightline_planner_plugin">
+  <class name="nav2_straightline_planner/StraightLinePlanner" type="nav2_straightline_planner::StraightLinePlanner" base_class_type="nav2_core::GlobalPlanner">
+    <description>This is a simple straight line planner that creates a direct path between start and goal.</description>
+  </class>
+</library> 
