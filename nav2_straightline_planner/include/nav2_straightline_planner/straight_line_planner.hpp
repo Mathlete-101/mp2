@@ -3,6 +3,10 @@
 
 #include <string>
 #include <memory>
+#include <queue>
+#include <unordered_map>
+#include <vector>
+#include <functional>
 
 #include "nav2_core/global_planner.hpp"
 #include "nav_msgs/msg/path.hpp"
@@ -12,6 +16,27 @@
 
 namespace nav2_straightline_planner
 {
+
+// Structure to represent a node in the A* search
+struct Node
+{
+  int x, y;
+  double g_cost;  // Cost from start to current
+  double h_cost;  // Heuristic cost from current to goal
+  double f_cost;  // Total cost (g_cost + h_cost)
+  Node* parent;
+
+  Node(int x_, int y_) : x(x_), y(y_), g_cost(0), h_cost(0), f_cost(0), parent(nullptr) {}
+};
+
+// Custom comparator for priority queue
+struct CompareNodes
+{
+  bool operator()(const Node* a, const Node* b)
+  {
+    return a->f_cost > b->f_cost;
+  }
+};
 
 class StraightLinePlanner : public nav2_core::GlobalPlanner
 {
@@ -57,6 +82,21 @@ protected:
 
   // Interpolation resolution for the path
   double interpolation_resolution_;
+
+  // Cost threshold for valid cells
+  double cost_threshold_;
+
+  // Weight for cost-based path cost calculation
+  double cost_weight_;
+
+private:
+  // Helper methods for A* search
+  std::vector<Node*> getNeighbors(const Node* current);
+  double calculateHeuristic(const Node* current, const Node* goal);
+  bool isValid(int x, int y);
+  bool isGoal(const Node* current, const Node* goal);
+  std::vector<Node*> reconstructPath(Node* goal);
+  void clearNodes(std::vector<Node*>& nodes);
 };
 
 }  // namespace nav2_straightline_planner
