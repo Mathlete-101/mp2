@@ -28,7 +28,7 @@ DRIVE_AND_DIG_SPEED_MPS = 0.075
 #DRIVE_AND_DIG_SPEED_MPS = 0.1
 
 # for autonomy, Ki must be small or the rover will slowly increase speed 
-Ki = 0.2
+Ki = 5
 Kp = 4
 
 class ArduinoControl(Node):
@@ -101,8 +101,8 @@ class ArduinoControl(Node):
     def cmd_vel(self, msg):
         # Update velocity message
         self.velocity_message.update({
-            "linearx_mps": msg.linear.x * 0.5,
-            "angularz_rps": msg.angular.z * -2,
+            "linearx_mps": msg.linear.x,
+            "angularz_rps": msg.angular.z * -1,
         })
 
     def write_velocity_message(self):

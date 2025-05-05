@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#disable the lari service (it uses the arduino connection while it's up)
+sudo systemctl stop lari
+
 # Try both possible paths to arduino-cli
 ARDUINO_CLI_PATHS=(
     "/home/moonpie/bin/arduino-cli"
@@ -35,3 +38,6 @@ fi
 
 # Upload
 $ARDUINO_CLI upload --fqbn arduino:avr:mega --port /dev/ttyACM0 ardu --verbose
+
+#reenable the lari service
+sudo systemctl start lari

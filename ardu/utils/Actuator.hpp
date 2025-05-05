@@ -70,8 +70,7 @@ Actuator::Actuator() {
 }
 
 bool Actuator::isLimitSwitchActivated() {
-    return true;
-    //return digitalRead(LM_SW_2) == LOW;  // Active high due to pullup
+    return digitalRead(LM_SW_2) == LOW;  // Active high due to pullup
 }
 
 void Actuator::remoteControl(bool extend, bool retract) {
