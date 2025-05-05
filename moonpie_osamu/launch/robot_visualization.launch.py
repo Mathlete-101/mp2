@@ -10,8 +10,8 @@ This is used when you want to visualize the robot without starting the actual ca
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition 
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -23,10 +23,16 @@ def generate_launch_description():
     
     # Declare the launch arguments
     use_rviz = LaunchConfiguration('use_rviz')
+    remote_mode = LaunchConfiguration('remote_mode')
     use_rviz_arg = DeclareLaunchArgument(
         'use_rviz',
         default_value='True',
         description='Whether to launch RViz'
+    )
+    remote_mode_arg = DeclareLaunchArgument(
+        'remote_mode',
+        default_value='True',
+        description='Use the remote rviz display which can work over the network'
     )
     
     # Include the robot description launch file
@@ -50,8 +56,16 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         arguments=['-d', os.path.join(pkg_share, 'config', 'visualization.rviz')],
-        condition=IfCondition(use_rviz)
+        condition=IfCondition(PythonExpression([use_rviz, ' and not ', remote_mode]))
     )
+    rviz_node_remote = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', os.path.join(pkg_share, 'config', 'navigation_remote.rviz')],
+        condition=IfCondition(PythonExpression([use_rviz, ' and ', remote_mode]))
+    )
+    
     
     # Add image transport nodes to decompress compressed streams
     color_image_decompress = Node(
@@ -78,9 +92,11 @@ def generate_launch_description():
 
     return LaunchDescription([
         use_rviz_arg,
+        remote_mode_arg,
         robot_description_launch,
         camera_link_to_optical,
         rviz_node,
-        color_image_decompress,
-        depth_image_decompress
+        rviz_node_remote,
+#        color_image_decompress,
+#        depth_image_decompress
     ]) 
