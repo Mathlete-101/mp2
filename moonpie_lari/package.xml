@@ -40,6 +40,7 @@ For more information, please refer to https://unlicense.org/
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>moonpie_osamu</depend>
   <exec_depend>python3-serial</exec_depend>
 
   <export>
