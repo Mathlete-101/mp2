@@ -47,27 +47,33 @@ class ArduinoControl(Node):
             10
         )
         self.arduino_command_publisher = self.create_publisher(String, 'arduino_command', 10)
-        self.message = {
+        
+        # Split message into velocity and control components
+        self.velocity_message = {
             "cmd": True,
             "linearx_mps": 0.0,
-            "angularz_rps": 0.0,
+            "angularz_rps": 0.0
+        }
+        
+        self.control_message = {
+            "cmd": True,
             "dump_belt": 0,
             "dig_belt": 0,
             "actuator_extend": False,
             "actuator_retract": False,
             "dpad": {"x": 0, "y": 0},
-            #params -- ignore
             "Kp": Kp,
-            "Ki": Ki,
-#            "dutyA": 100,
-#            "dutyB": 100,
-#            "dutyC": 100,
+            "Ki": Ki
         }
-
+        
+        # Track if control values have changed
+        self.control_changed = False
+        
         self.get_logger().info('Arduino Control Node has started')
 
-        self.send_mode = 0
-        self.comms_timer = self.create_timer(0.1, self.write_message)
+        # Set up separate timers for velocity and control messages
+        self.velocity_timer = self.create_timer(0.02, self.write_velocity_message)
+        self.control_timer = self.create_timer(0.1, self.write_control_message)
 
         self.autonomous_active = False
         self.autonomous_start_time = 0.0
@@ -75,13 +81,15 @@ class ArduinoControl(Node):
         self.dump_belt_on_period = False
 
     def joy(self, msg):
-        self.message = dict(self.message, **{
+        # Update control message and mark as changed
+        self.control_message.update({
             "dump_belt": msg.buttons[1],
             "dig_belt": msg.buttons[0],
             "actuator_extend": msg.axes[7] < 0,
             "actuator_retract": msg.axes[7] > 0,
             "dpad": {"x": msg.axes[6], "y": msg.axes[7]},
         })
+        self.control_changed = True
 
         # start autonomy if left dpad_x is pressed
         if msg.axes[6] == 1.0 and not self.autonomous_active:
@@ -91,77 +99,69 @@ class ArduinoControl(Node):
             self.kill_autonomous()
 
     def cmd_vel(self, msg):
-        self.message = dict(self.message, **{
+        # Update velocity message
+        self.velocity_message.update({
             "linearx_mps": msg.linear.x * 0.5,
             "angularz_rps": msg.angular.z * -2,
         })
 
-    def write_message(self):
-        # autonomous message is written after remote control message
-        # appendages not controlled by autonomy can still be controlled while 'autonomous' if the button is pressed and it is not controlled by autonomy
-        if self.autonomous_active:
-            self.run_autonomous()
-
-        if self.send_mode == 0:
-            cmd = json.dumps(self.message)
-            self.send_mode = 0
-        elif self.send_mode == 1:
-            cmd = '{"cmd": false, "drive_train": {"set_angularz_rps": null, "set_linearx_mps": null}, "actuator": {"get_state": null}, "dig_belt": {"get_state": null}, "dump_belt": {"get_state": null}}'
-            self.send_mode = 0
-        else:
-            self.get_logger().error("invalid send mode")
-        self.get_logger().info(f"sending message: {self.send_mode}\n{cmd}")
+    def write_velocity_message(self):
+        cmd = json.dumps(self.velocity_message)
         msg = String()
         msg.data = cmd
         self.arduino_command_publisher.publish(msg)
 
-    # start the actuator and dig belt to start autonomous digging 
+    def write_control_message(self):
+        if self.control_changed or self.autonomous_active:
+            cmd = json.dumps(self.control_message)
+            msg = String()
+            msg.data = cmd
+            self.arduino_command_publisher.publish(msg)
+            self.control_changed = False
+
     def start_autonomous(self):
         self.get_logger().info("Autonomous process started")
         self.autonomous_active = True
         self.autonomous_start_time = time.time()
-        self.message["actuator_extend"] = True
-        self.message["dig_belt"] = 1
+        self.control_message["actuator_extend"] = True
+        self.control_message["dig_belt"] = 1
         self.dump_belt_last_time = time.time() 
 
-    # stop everything in autonomy and exit auto mdoe
     def kill_autonomous(self):
         self.get_logger().info("Autonomous process killed")
         self.autonomous_active = False
-        self.message["actuator_extend"] = False
-        self.message["dig_belt"] = 0
-        self.message["linearx_mps"] = 0.0
-        self.message["dump_belt"] = 0
-        self.message["actuator_retract"] = False
+        self.control_message["actuator_extend"] = False
+        self.control_message["dig_belt"] = 0
+        self.velocity_message["linearx_mps"] = 0.0
+        self.control_message["dump_belt"] = 0
+        self.control_message["actuator_retract"] = False
 
-    # run autonomy
-    # using ROS timers made things super weird when I tried it, but would probably be better
     def run_autonomous(self):
         current_time = time.time()
         elapsed_time = current_time - self.autonomous_start_time
 
         if elapsed_time < ACTUATOR_EXTEND_S:
-            self.message["actuator_extend"] = True
-            self.message["linearx_mps"] = 0.0
-            self.message["dig_belt"] = 1
+            self.control_message["actuator_extend"] = True
+            self.velocity_message["linearx_mps"] = 0.0
+            self.control_message["dig_belt"] = 1
         elif elapsed_time < ACTUATOR_EXTEND_S + DRIVE_FORWARD_S:
-            self.message["actuator_extend"] = False
-            self.message["linearx_mps"] = DRIVE_AND_DIG_SPEED_MPS
-            self.message["dig_belt"] = 1
+            self.control_message["actuator_extend"] = False
+            self.velocity_message["linearx_mps"] = DRIVE_AND_DIG_SPEED_MPS
+            self.control_message["dig_belt"] = 1
 
             # Rotate dump belt at intervals
             if (elapsed_time - ACTUATOR_EXTEND_S) % DUMP_ROTATE_EVERY_S < DUMP_ROTATE_PERIOD_S:
-                self.message["dump_belt"] = 1
+                self.control_message["dump_belt"] = 1
             else:
-                self.message["dump_belt"] = 0
+                self.control_message["dump_belt"] = 0
         elif elapsed_time < ACTUATOR_EXTEND_S + DRIVE_FORWARD_S + ACTUATOR_RETRACT_S:
-            self.message["linearx_mps"] = 0.0
-            self.message["dig_belt"] = 1
-            self.message["actuator_retract"] = True
+            self.velocity_message["linearx_mps"] = 0.0
+            self.control_message["dig_belt"] = 1
+            self.control_message["actuator_retract"] = True
         else:
             # Stop everything
-            self.message["actuator_retract"] = False
-            self.message["dig_belt"] = 0
+            self.control_message["actuator_retract"] = False
+            self.control_message["dig_belt"] = 0
             self.autonomous_active = False
             self.get_logger().info("Autonomous process finished")
 

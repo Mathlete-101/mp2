@@ -94,7 +94,6 @@ void receiveData() {
 void processJson(String jsonString) {
     StaticJsonDocument<256> doc;
     DeserializationError error = deserializeJson(doc, jsonString);
-    bool cmd;
 
     if (error) {
         Serial.print("JSON parse failed: ");
@@ -102,71 +101,69 @@ void processJson(String jsonString) {
         return;
     }
 
-    if (doc.containsKey("cmd")) {
-      cmd = doc["cmd"];
-      // execute the command
-      executeCommand(jsonString);
-      
-      // if cmd is false, send a system update
-      if (!cmd) {
-        createUpdate(jsonString);
-      }
-    }
-    else {
-      Serial.println("Command/Update not recognized");
-    }
-    
+    // Execute the command
+    executeCommand(jsonString);
 }
 
 void executeCommand(String command) {
   StaticJsonDocument<256> doc;
   DeserializationError error = deserializeJson(doc, command);
 
-  // Extract data safely
+  // Extract data safely, only update values if they exist in the message
+  if (doc.containsKey("linearx_mps")) {
+    desired_speed_mps = doc["linearx_mps"];
+  }
+  if (doc.containsKey("angularz_rps")) {
+    desired_angular_speed_rps = doc["angularz_rps"];
+  }
+
+  if (doc.containsKey("actuator_extend")) {
+    actuator_extend = doc["actuator_extend"];
+  }
+  if (doc.containsKey("actuator_retract")) {
+    actuator_retract = doc["actuator_retract"];
+  }
+
+  if (doc.containsKey("dig_belt")) {
+    dig_belt = doc["dig_belt"];
+  }
+  if (doc.containsKey("dump_belt")) {
+    dump_belt = doc["dump_belt"];
+  }
     
-  desired_speed_mps = doc["linearx_mps"];
-  desired_angular_speed_rps = doc["angularz_rps"];
+  if (doc.containsKey("dpad")) {
+    JsonObject dpadJson = doc["dpad"];
+    if (dpadJson.containsKey("x")) {
+      dpad_x = dpadJson["x"];
+    }
+    if (dpadJson.containsKey("y")) {
+      dpad_y = dpadJson["y"];
+    }
+  }
 
-  actuator_extend = doc["actuator_extend"];
-  actuator_retract = doc["actuator_retract"];
+  if (doc.containsKey("Kp")) {
+    Kp = doc["Kp"];
+    driveTrain.setKp(Kp);
+  }
 
-  dig_belt = doc["dig_belt"];
-  dump_belt = doc["dump_belt"];
-    
-  // JsonObject buttonsJson = doc["buttons"];
-  // buttons[0] = buttonsJson["A"];
-  // buttons[1] = buttonsJson["B"];
-  // buttons[2] = buttonsJson["X"];
-  // buttons[3] = buttonsJson["Y"];
-
-    
-  JsonObject dpadJson = doc["dpad"];
-  dpad_x = dpadJson["x"];
-  dpad_y = dpadJson["y"];
-
-    if (doc.containsKey("Kp")) {
-        Kp = doc["Kp"];
-        driveTrain.setKp(Kp);
-    }
-
-    if (doc.containsKey("Ki")) {
-        Ki = doc["Ki"];
-        driveTrain.setKi(Ki);
-    }
-    // split so that each motor gets a different value
-    if (doc.containsKey("dutyA")) {
-      JsonObject actuatorSpeedJson = doc["dutyA"];
-      actuator.setPWM(actuatorSpeedJson["extend_speed"], actuatorSpeedJson["retract_speed"]);
-    }
-    if (doc.containsKey("dutyD")) {
-      dumpBelt.setPWM(doc["dutyD"]);
-    }
-     if (doc.containsKey("dutyB")) {
-      digBelt.setPWM(doc["dutyB"]);
-    }
-    if (doc.containsKey("fan_speed")) {
-      fan.setSpeed(doc["fan_speed"]);
-    }
+  if (doc.containsKey("Ki")) {
+    Ki = doc["Ki"];
+    driveTrain.setKi(Ki);
+  }
+  // split so that each motor gets a different value
+  if (doc.containsKey("dutyA")) {
+    JsonObject actuatorSpeedJson = doc["dutyA"];
+    actuator.setPWM(actuatorSpeedJson["extend_speed"], actuatorSpeedJson["retract_speed"]);
+  }
+  if (doc.containsKey("dutyD")) {
+    dumpBelt.setPWM(doc["dutyD"]);
+  }
+  if (doc.containsKey("dutyB")) {
+    digBelt.setPWM(doc["dutyB"]);
+  }
+  if (doc.containsKey("fan_speed")) {
+    fan.setSpeed(doc["fan_speed"]);
+  }
 }
 
 void createUpdate(String updateRequest) {
