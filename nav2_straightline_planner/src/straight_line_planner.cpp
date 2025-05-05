@@ -2,6 +2,7 @@
 #include <pluginlib/class_list_macros.hpp>
 #include "nav2_util/node_utils.hpp"
 #include <cmath>
+#include <algorithm>
 
 namespace nav2_straightline_planner
 {
@@ -111,6 +112,84 @@ void StraightLinePlanner::clearNodes(std::vector<Node*>& nodes)
   nodes.clear();
 }
 
+void StraightLinePlanner::bresenhamLine(int x0, int y0, int x1, int y1, 
+                                      std::function<bool(int, int)> point_callback)
+{
+  int dx = std::abs(x1 - x0);
+  int dy = std::abs(y1 - y0);
+  int sx = (x0 < x1) ? 1 : -1;
+  int sy = (y0 < y1) ? 1 : -1;
+  int err = dx - dy;
+
+  while (true) {
+    if (!point_callback(x0, y0)) {
+      return;
+    }
+    
+    if (x0 == x1 && y0 == y1) {
+      break;
+    }
+    
+    int e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      x0 += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y0 += sy;
+    }
+  }
+}
+
+bool StraightLinePlanner::hasLineOfSight(const Node* start, const Node* end)
+{
+  bool has_los = true;
+  bresenhamLine(start->x, start->y, end->x, end->y,
+    [this, &has_los](int x, int y) {
+      if (!isValid(x, y)) {
+        has_los = false;
+        return false;
+      }
+      return true;
+    });
+  return has_los;
+}
+
+std::vector<Node*> StraightLinePlanner::simplifyPath(const std::vector<Node*>& path)
+{
+  if (path.size() <= 2) {
+    return path;
+  }
+
+  std::vector<Node*> simplified;
+  simplified.push_back(path[0]);
+
+  size_t current = 0;
+  while (current < path.size() - 1) {
+    size_t next = path.size() - 1;  // Start by trying to connect to the end
+    
+    // Try to find the furthest point we can connect to
+    while (next > current + 1) {
+      if (hasLineOfSight(path[current], path[next])) {
+        break;
+      }
+      next--;
+    }
+    
+    // If we couldn't connect to any point, move forward one step
+    if (next == current + 1) {
+      current++;
+      simplified.push_back(path[current]);
+    } else {
+      current = next;
+      simplified.push_back(path[current]);
+    }
+  }
+
+  return simplified;
+}
+
 nav_msgs::msg::Path StraightLinePlanner::createPlan(
   const geometry_msgs::msg::PoseStamped & start,
   const geometry_msgs::msg::PoseStamped & goal)
@@ -191,8 +270,11 @@ nav_msgs::msg::Path StraightLinePlanner::createPlan(
   if (found_path) {
     std::vector<Node*> path = reconstructPath(current);
     
-    // Convert path to poses
-    for (Node* node : path) {
+    // Simplify the path
+    std::vector<Node*> simplified_path = simplifyPath(path);
+    
+    // Convert simplified path to poses
+    for (Node* node : simplified_path) {
       geometry_msgs::msg::PoseStamped pose;
       double wx, wy;
       costmap_->mapToWorld(node->x, node->y, wx, wy);

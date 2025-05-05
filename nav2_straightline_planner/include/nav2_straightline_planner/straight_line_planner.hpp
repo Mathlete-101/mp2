@@ -97,6 +97,12 @@ private:
   bool isGoal(const Node* current, const Node* goal);
   std::vector<Node*> reconstructPath(Node* goal);
   void clearNodes(std::vector<Node*>& nodes);
+
+  // Path simplification methods
+  std::vector<Node*> simplifyPath(const std::vector<Node*>& path);
+  bool hasLineOfSight(const Node* start, const Node* end);
+  void bresenhamLine(int x0, int y0, int x1, int y1, 
+                    std::function<bool(int, int)> point_callback);
 };
 
 }  // namespace nav2_straightline_planner
