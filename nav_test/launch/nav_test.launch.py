@@ -29,9 +29,14 @@ def generate_launch_description():
         'autostart', default_value='true',
         description='Automatically startup the nav2 stack')
 
+
+    #default_params_filename = 'nav2_params_dwb_controller.yaml'
+    default_params_filename = 'nav2_params_graceful_controller.yaml'
+    default_params_file = os.path.join(nav_test_dir, 'config', default_params_filename)
+
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(nav_test_dir, 'config', 'nav2_params.yaml'),
+        default_value=default_params_file,
         description='Full path to the ROS2 parameters file to use')
 
     declare_bt_xml_cmd = DeclareLaunchArgument(

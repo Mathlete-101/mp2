@@ -1,0 +1,144 @@
+map_server:
+  ros__parameters:
+    use_sim_time: false
+    yaml_filename: "map.yaml"
+
+amcl:
+  ros__parameters:
+    use_sim_time: false
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+    base_frame_id: "base_link"
+    global_frame_id: "map"
+    laser_model_type: "likelihood_field"
+    max_particles: 2000
+    min_particles: 500
+    odom_frame_id: "odom"
+    transform_tolerance: 1.0
+    update_min_a: 0.2
+    update_min_d: 0.25
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: false
+    global_frame: "map"
+    robot_base_frame: "base_link"
+    odom_topic: "/odom"
+
+controller_server:
+  ros__parameters:
+    use_sim_time: false
+    controller_frequency: 20.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.001
+    min_theta_velocity_threshold: 0.001
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugin: "goal_checker"
+    controller_plugins: ["FollowPath"]
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+      stateful: True
+    FollowPath:
+      plugin: "nav2_graceful_controller::GracefulController"
+      # Controller parameters
+      desired_linear_vel: 0.26
+      lookahead_distance: 0.5
+      min_lookahead_distance: 0.3
+      max_lookahead_distance: 0.9
+      lookahead_time: 1.5
+      rotate_to_heading_angular_vel: 1.0
+      transform_tolerance: 0.2
+      use_collision_detection: true
+      allow_backward: true
+      # Goal checker parameters
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+      stateful: true
+
+planner_server:
+  ros__parameters:
+    planner_plugins: ["GridBased"]
+    use_sim_time: True
+
+    GridBased:
+      plugin: "nav2_navfn_planner/NavfnPlanner"
+      visualize_potential: false
+      use_astar: false
+      allow_unknown: true
+      tolerance: 0.3
+
+recoveries_server:
+  ros__parameters:
+    use_sim_time: false
+    costmap_topic: "local_costmap/costmap_raw"
+    footprint_topic: "local_costmap/published_footprint"
+    cycle_frequency: 10.0
+    recovery_plugins: ["spin", "backup", "wait"]
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      use_sim_time: false
+      publish_frequency: 2.0
+      global_frame: "map"
+      robot_base_frame: "base_link"
+      update_frequency: 5.0
+      rolling_window: true
+      width: 10
+      height: 10
+      resolution: 0.05
+      inflation_layer:
+        enabled: true
+        inflation_radius: 0.675
+      obstacle_layer:
+        enabled: true
+        observation_sources: scan
+        scan:
+          data_type: "LaserScan"
+          topic: scan
+          marking: true
+          clearing: true
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: false
+      publish_frequency: 1.0
+      global_frame: "map"
+      robot_base_frame: "base_link"
+      update_frequency: 1.0
+      rolling_window: true
+      width: 10
+      height: 10
+      resolution: 0.05
+      inflation_layer:
+        enabled: true
+        inflation_radius: 0.675
+      obstacle_layer:
+        enabled: true
+        observation_sources: scan
+        scan:
+          data_type: "LaserScan"
+          topic: scan
+          marking: true
+          clearing: true
+
+lifecycle_manager:
+  ros__parameters:
+    use_sim_time: false
+    autostart: true
+    node_names: ["controller_server", "planner_server", "recoveries_server", "bt_navigator", "waypoint_follower"]
+    bond_timeout: 4.0
+    attempt_respawn_reconnection: true
+    bond_respawn_max_duration: 10.0
+    # Increase shutdown timeout to give nodes more time to clean up
+    shutdown_timeout: 60.0 
