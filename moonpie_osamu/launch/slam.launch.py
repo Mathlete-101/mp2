@@ -37,7 +37,7 @@ def generate_launch_description():
     use_imu = LaunchConfiguration('use_imu')
     use_imu_arg = DeclareLaunchArgument(
         'use_imu',
-        default_value='False',
+        default_value='True',
         description='Whether to use IMU data for odometry fusion'
     )
     

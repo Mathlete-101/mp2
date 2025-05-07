@@ -74,7 +74,7 @@ planner_server:
       visualize_potential: false
       use_astar: false
       allow_unknown: true
-      tolerance: 0.3
+      tolerance: 0.5
 
 recoveries_server:
   ros__parameters:
@@ -117,8 +117,8 @@ global_costmap:
       robot_base_frame: "base_link"
       update_frequency: 1.0
       rolling_window: true
-      width: 10
-      height: 10
+      width: 30
+      height: 30
       resolution: 0.05
       inflation_layer:
         enabled: true
