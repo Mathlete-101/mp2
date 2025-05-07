@@ -34,32 +34,17 @@ def generate_launch_description():
         }.items()
     )
 
-    
-    # Add image transport nodes for color and depth images
-    color_image_transport = Node(
-        package='image_transport',
-        executable='republish',
-        name='color_image_transport',
-        arguments=['raw', 'compressed'],
-        remappings=[
-            ('in', '/camera1/color/image_raw'),
-            ('out', '/camera1/color/image_raw/compressed')
-        ]
+    # Add static transform from camera link to camera optical frame
+    camera_link_to_optical = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='camera_link_to_optical',
+        arguments=['0', '0', '0', '0', '0', '0', 'camera1_link', 'camera1_depth_optical_frame']
     )
-    
-    depth_image_transport = Node(
-        package='image_transport',
-        executable='republish',
-        name='depth_image_transport',
-        arguments=['raw', 'compressedDepth'],
-        remappings=[
-            ('in', '/camera1/depth/image_raw'),
-            ('out', '/camera1/depth/image_raw/compressedDepth')
-        ]
-    )
+
+
     
     return LaunchDescription([
         realsense_launch,
-        color_image_transport,
-        depth_image_transport
+        camera_link_to_optical
     ]) 

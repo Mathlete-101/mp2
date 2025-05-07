@@ -33,7 +33,7 @@ def generate_launch_description():
             os.path.join(pkg_share, 'launch', 'osamu.launch.py')
         ]),
         launch_arguments={
-            'use_rviz': use_rviz,
+            'use_rviz': 'False',
             'use_rtabmap_viz': 'True'  # Enable rtabmap_viz for development
         }.items()
     )
@@ -44,7 +44,7 @@ def generate_launch_description():
             os.path.join(pkg_share, 'launch', 'robot_visualization.launch.py')
         ]),
         launch_arguments={
-            'use_rviz': 'False'  # Explicitly disable RViz in this launch file
+            'use_rviz': 'True'  # Explicitly disable RViz in this launch file
         }.items()
     )
     

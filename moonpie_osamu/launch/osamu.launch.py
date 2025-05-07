@@ -37,15 +37,6 @@ def generate_launch_description():
         description='Whether to launch rtabmap_viz'
     )
     
-    # Include the robot visualization launch file
-    robot_visualization_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_share, 'launch', 'robot_visualization.launch.py')
-        ),
-        launch_arguments={
-            'use_rviz': 'False'  # Disable RViz in robot_visualization since we'll launch it here
-        }.items()
-    )
 
     # Include the RealSense launch file
     realsense_launch = IncludeLaunchDescription(
@@ -53,6 +44,14 @@ def generate_launch_description():
             os.path.join(pkg_share, 'launch', 'camera_only.launch.py')
         )
     )
+
+    # Include the robot description launch file
+    robot_description_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(pkg_share, 'launch', 'robot_description.launch.py')
+        ])
+    )
+
 
     # Include the SLAM launch file
     slam_launch = IncludeLaunchDescription(
@@ -74,15 +73,6 @@ def generate_launch_description():
         }.items()
     )
     
-    # Launch RViz if enabled
-    rviz2_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', os.path.join(pkg_share, 'config', 'navigation.rviz'), '--ros-args', '--log-level', 'rviz2:=warn'],
-        condition=IfCondition(use_rviz)
-    )
-    
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -90,11 +80,8 @@ def generate_launch_description():
     ld.add_action(use_rviz_arg)
     ld.add_action(use_rtabmap_viz_arg)
 
-    # Add the RViz2 node
-    ld.add_action(rviz2_node)
-
     # Add the launch files
-    ld.add_action(robot_visualization_launch)
+    ld.add_action(robot_description_launch)
     ld.add_action(realsense_launch)
     ld.add_action(slam_launch)
     ld.add_action(nav_launch)
