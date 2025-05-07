@@ -13,3 +13,4 @@ ros-humble-vision-opencv
 ros-humble-message-filters
 ros-humble-compressed-image-transport
 ros-humble-compressed-depth-image-transportpython3-wheel
+ros-humble-robot-localization
