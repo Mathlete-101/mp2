@@ -20,83 +20,14 @@ import os
 def generate_launch_description():
     # Get the launch directory
     pkg_share = FindPackageShare('moonpie_osamu').find('moonpie_osamu')
-    
-    # Declare the launch arguments
-    use_rviz = LaunchConfiguration('use_rviz')
-    remote_mode = LaunchConfiguration('remote_mode')
-    use_rviz_arg = DeclareLaunchArgument(
-        'use_rviz',
-        default_value='True',
-        description='Whether to launch RViz'
-    )
-    remote_mode_arg = DeclareLaunchArgument(
-        'remote_mode',
-        default_value='True',
-        description='Use the remote rviz display which can work over the network'
-    )
-    
-    # Include the robot description launch file
-    robot_description_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            os.path.join(pkg_share, 'launch', 'robot_description.launch.py')
-        ])
-    )
-    
-    # Add static transform from camera link to camera optical frame
-    camera_link_to_optical = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='camera_link_to_optical',
-        arguments=['0', '0', '0', '0', '0', '0', 'camera1_link', 'camera1_depth_optical_frame']
-    )
-    
     # Launch RViz if enabled
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        arguments=['-d', os.path.join(pkg_share, 'config', 'visualization.rviz')],
-        condition=IfCondition(PythonExpression([use_rviz, ' and not ', remote_mode]))
-    )
-    rviz_node_remote = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', os.path.join(pkg_share, 'config', 'navigation_remote.rviz')],
-        condition=IfCondition(PythonExpression([use_rviz, ' and ', remote_mode]))
-    )
-    
-    
-    # Add image transport nodes to decompress compressed streams
-    color_image_decompress = Node(
-        package='image_transport',
-        executable='republish',
-        name='color_image_decompress',
-        arguments=['compressed', 'raw'],
-        remappings=[
-            ('in', '/camera1/color/image_raw/compressed'),
-            ('out', '/camera1/color/image_raw/decompressed')
-        ]
-    )
-    
-    depth_image_decompress = Node(
-        package='image_transport',
-        executable='republish',
-        name='depth_image_decompress',
-        arguments=['compressedDepth', 'raw'],
-        remappings=[
-            ('in', '/camera1/depth/image_raw/compressedDepth'),
-            ('out', '/camera1/depth/image_raw/decompressed')
-        ]
+        arguments=['-d', os.path.join(pkg_share, 'config', 'navigation.rviz')],
     )
 
     return LaunchDescription([
-        use_rviz_arg,
-        remote_mode_arg,
-        robot_description_launch,
-        camera_link_to_optical,
-        rviz_node,
-        rviz_node_remote,
-#        color_image_decompress,
-#        depth_image_decompress
+        rviz_node
     ]) 

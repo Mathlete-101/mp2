@@ -42,10 +42,7 @@ def generate_launch_description():
     robot_visualization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             os.path.join(pkg_share, 'launch', 'robot_visualization.launch.py')
-        ]),
-        launch_arguments={
-            'use_rviz': 'True'  # Explicitly disable RViz in this launch file
-        }.items()
+        ])
     )
     
     return LaunchDescription([
