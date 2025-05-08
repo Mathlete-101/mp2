@@ -14,3 +14,10 @@ ros-humble-message-filters
 ros-humble-compressed-image-transport
 ros-humble-compressed-depth-image-transportpython3-wheel
 ros-humble-robot-localization
+ros-humble-image-transport-plugins
+python3-transforms3d
+ros-humble-tf-transformations
+libi2c-dev
+ros-humble-aruco
+ros-humble-aruco-ros
+ros-humble-aruco-opencv

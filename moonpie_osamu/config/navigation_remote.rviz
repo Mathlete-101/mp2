@@ -256,6 +256,18 @@ Visualization Manager:
         RobotModel: true
         Value: true
       Zoom Factor: 1
+    - Alpha: 1
+      Class: rviz_default_plugins/PoseArray
+      Color: 255; 25; 0
+      Enabled: true
+      Name: ArUco Markers
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /aruco_poses
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

@@ -4,6 +4,7 @@ It launches:
 1. The robot visualization components (robot state publisher and RViz)
 2. The RealSense D435 camera driver with pointcloud enabled
 3. SLAM nodes for mapping
+4. ArUco marker detection
 This is the main launch file to use when you want to visualize both the robot and camera data with SLAM.
 """
 
@@ -72,6 +73,13 @@ def generate_launch_description():
             'use_rviz': 'False'  # Disable RViz in nav_test since we're launching it here
         }.items()
     )
+
+    # Include the ArUco detection launch file
+    aruco_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg_share, 'launch', 'aruco.launch.py')
+        )
+    )
     
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -85,5 +93,6 @@ def generate_launch_description():
     ld.add_action(realsense_launch)
     ld.add_action(slam_launch)
     ld.add_action(nav_launch)
+    ld.add_action(aruco_launch)
 
     return ld 
