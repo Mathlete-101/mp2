@@ -42,7 +42,10 @@ def generate_launch_description():
     robot_visualization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             os.path.join(pkg_share, 'launch', 'robot_visualization.launch.py')
-        ])
+        ]),
+        launch_arguments={
+            'rviz_config': 'navigation.rviz'
+        }.items()
     )
     
     return LaunchDescription([

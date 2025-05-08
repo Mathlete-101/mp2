@@ -11,6 +11,8 @@ Panels:
     Tree Height: 403
   - Class: nav2_rviz_plugins/Navigation 2
     Name: Navigation 2
+  - Class: moonpie_osamu/BehaviorControlPanel
+    Name: Mission Control
 Visualization Manager:
   Class: ""
   Displays:

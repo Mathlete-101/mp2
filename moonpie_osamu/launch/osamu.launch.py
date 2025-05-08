@@ -5,6 +5,8 @@ It launches:
 2. The RealSense D435 camera driver with pointcloud enabled
 3. SLAM nodes for mapping
 4. ArUco marker detection
+5. Navigation system
+6. Mission control system
 This is the main launch file to use when you want to visualize both the robot and camera data with SLAM.
 """
 
@@ -80,6 +82,14 @@ def generate_launch_description():
             os.path.join(pkg_share, 'launch', 'aruco.launch.py')
         )
     )
+
+    # Launch the mission control node
+    mission_control_node = Node(
+        package='moonpie_osamu',
+        executable='mission_control',
+        name='mission_control',
+        output='screen'
+    )
     
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -94,5 +104,6 @@ def generate_launch_description():
     ld.add_action(slam_launch)
     ld.add_action(nav_launch)
     ld.add_action(aruco_launch)
+    ld.add_action(mission_control_node)
 
     return ld 

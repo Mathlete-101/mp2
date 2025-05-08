@@ -11,7 +11,7 @@ This is used when you want to visualize the robot without starting the actual ca
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition 
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration, PythonExpression, PathJoinSubstitution
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -20,15 +20,25 @@ import os
 def generate_launch_description():
     # Get the launch directory
     pkg_share = FindPackageShare('moonpie_osamu').find('moonpie_osamu')
+    
+    # Declare the launch arguments
+    rviz_config = LaunchConfiguration('rviz_config')
+    rviz_config_arg = DeclareLaunchArgument(
+        'rviz_config',
+        default_value='navigation_remote.rviz',
+        description='RViz configuration file to use'
+    )
+    
     # Launch RViz if enabled
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
         output='log',
-        arguments=['-d', os.path.join(pkg_share, 'config', 'navigation.rviz'), '--ros-args', '--log-level', 'rviz2:=warn'],
+        arguments=['-d', PathJoinSubstitution([pkg_share, 'config', rviz_config]), '--ros-args', '--log-level', 'rviz2:=warn'],
     )
 
     return LaunchDescription([
+        rviz_config_arg,
         rviz_node
     ]) 
