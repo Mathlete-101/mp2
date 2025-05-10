@@ -13,6 +13,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <moonpie_osamu/msg/behavior_status.hpp>
+#include <moonpie_osamu/msg/mission_command.hpp>
 
 namespace moonpie_osamu
 {
@@ -22,6 +23,12 @@ class MissionControlPanel : public QMainWindow
   Q_OBJECT
 
 public:
+  enum class ConnectionStatus {
+    DISCONNECTED,
+    READY,
+    RUNNING
+  };
+
   explicit MissionControlPanel(QWidget * parent = nullptr);
   ~MissionControlPanel();
   void onBehaviorStatus(const moonpie_osamu::msg::BehaviorStatus::SharedPtr msg);
@@ -33,16 +40,20 @@ private slots:
   void onStopMission();
 
 private:
+  void updateConnectionStatus(ConnectionStatus status);
+  void sendTestCommand();
+  void setStatusLabel(ConnectionStatus status);
+
   // ROS node and communication
   std::shared_ptr<rclcpp::Node> node_;
-  rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr mission_start_pub_;
-  rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr mission_stop_pub_;
+  rclcpp::Publisher<moonpie_osamu::msg::MissionCommand>::SharedPtr cmd_pub_;
   rclcpp::Subscription<moonpie_osamu::msg::BehaviorStatus>::SharedPtr behavior_status_sub_;
 
   QPushButton * start_button_;
   QPushButton * stop_button_;
   QLabel * status_label_;
   QTextEdit * log_display_;
+  ConnectionStatus connection_status_;
 };
 
 }  // namespace moonpie_osamu

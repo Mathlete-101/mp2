@@ -1,15 +1,19 @@
 #include "moonpie_osamu/mission_control_panel.hpp"
 #include <moonpie_osamu/msg/behavior_status.hpp>
+#include <moonpie_osamu/msg/mission_command.hpp>
 #include <QApplication>
 #include <thread>
 #include <QScrollBar>
 #include <QTimer>
+#include <chrono>
 
 namespace moonpie_osamu
 {
 
 MissionControlPanel::MissionControlPanel(QWidget * parent)
-: QMainWindow(parent)
+: QMainWindow(parent),
+  node_(std::make_shared<rclcpp::Node>("mission_control_panel")),
+  connection_status_(ConnectionStatus::DISCONNECTED)
 {
   // Set window properties
   setWindowTitle("Mission Control");
@@ -37,8 +41,8 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   main_layout->addLayout(button_layout);
 
   // Create status label
-  status_label_ = new QLabel("Status: Ready");
-  status_label_->setStyleSheet("QLabel { font-size: 14px; font-weight: bold; padding: 10px; }");
+  status_label_ = new QLabel("Status: Disconnected");
+  status_label_->setStyleSheet("QLabel { color: red; font-weight: bold; }");
   status_label_->setAlignment(Qt::AlignCenter);
   main_layout->addWidget(status_label_);
 
@@ -58,16 +62,17 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   // Create the ROS node
   node_ = std::make_shared<rclcpp::Node>("mission_control_panel_node");
 
-  // Create publishers
-  mission_start_pub_ = node_->create_publisher<std_msgs::msg::Empty>(
-    "mission/start", 10);
-  mission_stop_pub_ = node_->create_publisher<std_msgs::msg::Empty>(
-    "mission/stop", 10);
+  // Create command publisher
+  cmd_pub_ = node_->create_publisher<moonpie_osamu::msg::MissionCommand>(
+    "mission/cmd", 10);
 
   // Create subscriber for behavior status
   behavior_status_sub_ = node_->create_subscription<moonpie_osamu::msg::BehaviorStatus>(
-    "behavior/status", 10,
+    "mission/log", 10,
     std::bind(&MissionControlPanel::onBehaviorStatus, this, std::placeholders::_1));
+
+  // Send initial test command
+  QTimer::singleShot(1000, this, &MissionControlPanel::sendTestCommand);
 
   RCLCPP_INFO(node_->get_logger(), "Mission Control Panel initialized");
 }
@@ -77,54 +82,104 @@ MissionControlPanel::~MissionControlPanel()
   // Clean up resources
 }
 
+void MissionControlPanel::setStatusLabel(ConnectionStatus status)
+{
+  switch (status) {
+    case ConnectionStatus::DISCONNECTED:
+      status_label_->setText("Status: Disconnected");
+      status_label_->setStyleSheet("QLabel { color: red; font-weight: bold; }");
+      break;
+    case ConnectionStatus::READY:
+      status_label_->setText("Status: Ready");
+      status_label_->setStyleSheet("QLabel { color: #90ee90; font-weight: bold; }"); // light green
+      break;
+    case ConnectionStatus::RUNNING:
+      status_label_->setText("Status: Running");
+      status_label_->setStyleSheet("QLabel { color: #006400; font-weight: bold; }"); // dark green
+      break;
+  }
+}
+
+void MissionControlPanel::updateConnectionStatus(ConnectionStatus status)
+{
+  connection_status_ = status;
+  setStatusLabel(status);
+  if (status == ConnectionStatus::DISCONNECTED) {
+    start_button_->setEnabled(false);
+    stop_button_->setEnabled(false);
+  } else if (status == ConnectionStatus::READY) {
+    start_button_->setEnabled(true);
+    stop_button_->setEnabled(true);
+  } else if (status == ConnectionStatus::RUNNING) {
+    start_button_->setEnabled(false);
+    stop_button_->setEnabled(true);
+  }
+}
+
+void MissionControlPanel::sendTestCommand()
+{
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "TEST";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent test command to mission control node...");
+}
+
 void MissionControlPanel::onStartMission()
 {
-  // Publish start message
-  auto msg = std::make_unique<std_msgs::msg::Empty>();
-  mission_start_pub_->publish(std::move(msg));
+  if (connection_status_ != ConnectionStatus::READY) {
+    appendLog("Cannot start mission: Not connected to mission control node");
+    return;
+  }
 
-  // Update UI
-  start_button_->setEnabled(false);
-  stop_button_->setEnabled(true);
-  status_label_->setText("Status: Mission Running");
-  status_label_->setStyleSheet("QLabel { font-size: 14px; font-weight: bold; padding: 10px; color: #4CAF50; }");
-  
-  // Clear log display
-  log_display_->clear();
-  appendLog("Mission started");
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "START";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent start command");
 }
 
 void MissionControlPanel::onStopMission()
 {
-  // Publish stop message
-  auto msg = std::make_unique<std_msgs::msg::Empty>();
-  mission_stop_pub_->publish(std::move(msg));
+  if (connection_status_ != ConnectionStatus::READY) {
+    appendLog("Cannot stop mission: Not connected to mission control node");
+    return;
+  }
 
-  // Update UI
-  start_button_->setEnabled(true);
-  stop_button_->setEnabled(false);
-  status_label_->setText("Status: Mission Stopped");
-  status_label_->setStyleSheet("QLabel { font-size: 14px; font-weight: bold; padding: 10px; color: #f44336; }");
-  
-  appendLog("Mission stopped");
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "STOP";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent stop command");
 }
 
 void MissionControlPanel::onBehaviorStatus(const moonpie_osamu::msg::BehaviorStatus::SharedPtr msg)
 {
-  QString log_entry = QString("[%1] %2: %3 - %4")
-    .arg(QDateTime::fromSecsSinceEpoch(msg->timestamp.sec).toString("hh:mm:ss"))
+  QString timestamp = QString::fromStdString(
+    std::to_string(msg->timestamp.sec) + "." +
+    std::to_string(msg->timestamp.nanosec / 1000000).substr(0, 3)
+  );
+
+  QString log_message = QString("[%1] %2: %3")
+    .arg(timestamp)
     .arg(QString::fromStdString(msg->current_node))
-    .arg(QString::fromStdString(msg->status))
     .arg(QString::fromStdString(msg->details));
-  
-  appendLog(log_entry);
+
+  appendLog(log_message);
+
+  // Update status based on message
+  if (msg->current_node == "mission_control") {
+    if (msg->status == "NAVIGATING") {
+      updateConnectionStatus(ConnectionStatus::RUNNING);
+    } else if (msg->status == "READY") {
+      updateConnectionStatus(ConnectionStatus::READY);
+    } else if (msg->status == "IDLE") {
+      updateConnectionStatus(ConnectionStatus::READY);
+    }
+  }
 }
 
 void MissionControlPanel::appendLog(const QString& message)
 {
-  log_display_->append(message);
-  // Scroll to the bottom
-  log_display_->verticalScrollBar()->setValue(log_display_->verticalScrollBar()->maximum());
+  log_display_->moveCursor(QTextCursor::Start);
+  log_display_->insertPlainText(message + "\n");
 }
 
 std::shared_ptr<rclcpp::Node> MissionControlPanel::getNode()

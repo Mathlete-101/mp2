@@ -3,47 +3,26 @@
 <package format="3">
   <name>moonpie_osamu</name>
   <version>0.0.1</version>
-  <description>Robot description and launch files for Osamu robot</description>
-  <maintainer email="moonpie@todo.todo">moonpie</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Mission control package for Moonpie robot</description>
+  <maintainer email="nath.h.jensen@gmail.com">Nathan Jensen</maintainer>
+  <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>rclpy</depend>
-  <depend>robot_state_publisher</depend>
-  <depend>realsense2_camera</depend>
-  <depend>joint_state_publisher</depend>
-  <depend>nav2_costmap_2d</depend>
-  <depend>nav2_voxel_grid</depend>
-  <depend>nav2_smac_planner</depend>
-  <depend>tf2_ros</depend>
-  <depend>tf2_geometry_msgs</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
-  <depend>std_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>sensor_msgs</depend>
-  <depend>image_transport_plugins</depend>
-  <depend>aruco_ros</depend>
   <depend>nav2_msgs</depend>
-  <depend>qtbase5-dev</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>builtin_interfaces</depend>
+  <depend>rosidl_default_generators</depend>
 
-  <exec_depend>python3-tf</exec_depend>
-
-  <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
-
-  <build_depend>rosidl_default_generators</build_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+
   <member_of_group>rosidl_interface_packages</member_of_group>
 
   <export>
     <build_type>ament_cmake</build_type>
-    <data_files>
-      <data_files share="${prefix}/urdf">
-        urdf/*
-      </data_files>
-    </data_files>
   </export>
 </package>

@@ -1,11 +1,6 @@
-# Timestamp of the status update
+# Message for behavior status updates
 builtin_interfaces/Time timestamp
-
-# Current node being executed
 string current_node
-
-# Status of the current node (RUNNING, SUCCESS, FAILURE)
 string status
-
-# Additional details about the current action
-string details 
+string details
+string message # Additional information about the status 

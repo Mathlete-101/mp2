@@ -1,20 +1,30 @@
 #include "moonpie_osamu/mission_control.hpp"
+#include "moonpie_osamu/msg/mission_command.hpp"
 
 namespace moonpie_osamu
 {
 
 MissionControl::MissionControl()
 : Node("mission_control"),
-  current_waypoint_(0)
+  current_waypoint_(0),
+  mission_active_(false),
+  last_distance_log_time_(this->now())
 {
+  RCLCPP_INFO(this->get_logger(), "Initializing Mission Control node...");
+
   // Create the action client
   nav_client_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
     this, "navigate_to_pose");
 
-  // Create the subscription
-  start_sub_ = this->create_subscription<std_msgs::msg::Empty>(
-    "mission/start", 10,
-    std::bind(&MissionControl::onStartMission, this, std::placeholders::_1));
+  // Create the command subscription
+  cmd_sub_ = this->create_subscription<moonpie_osamu::msg::MissionCommand>(
+    "mission/cmd", 10,
+    std::bind(&MissionControl::onMissionCommand, this, std::placeholders::_1));
+
+  // Initialize BehaviorStatus publisher
+  behavior_status_pub_ = this->create_publisher<moonpie_osamu::msg::BehaviorStatus>(
+    "mission/log", 10);
+  RCLCPP_INFO(this->get_logger(), "Created mission log publisher on topic: mission/log");
 
   // Initialize waypoints (these should be loaded from a config file in the future)
   geometry_msgs::msg::PoseStamped waypoint;
@@ -24,17 +34,71 @@ MissionControl::MissionControl()
   waypoint.pose.orientation.w = 1.0;
   waypoints_.push_back(waypoint);
 
+  waypoint.pose.position.x = 1.0;
+  waypoint.pose.position.y = 1.0;
+  waypoints_.push_back(waypoint);
+
   waypoint.pose.position.x = 0.0;
   waypoint.pose.position.y = 1.0;
   waypoints_.push_back(waypoint);
+
+  waypoint.pose.position.x = 0.0;
+  waypoint.pose.position.y = 0.0;
+  waypoints_.push_back(waypoint);
+
+  // Send ready message on startup
+  auto status_msg = std::make_unique<moonpie_osamu::msg::BehaviorStatus>();
+  status_msg->timestamp = this->now();
+  status_msg->current_node = "mission_control";
+  status_msg->status = "READY";
+  status_msg->details = "Mission control node is ready";
+  behavior_status_pub_->publish(std::move(status_msg));
+
+  RCLCPP_INFO(this->get_logger(), "Mission Control node initialized successfully");
 }
 
-void MissionControl::onStartMission(const std_msgs::msg::Empty::SharedPtr)
+void MissionControl::onMissionCommand(const moonpie_osamu::msg::MissionCommand::SharedPtr msg)
 {
-  RCLCPP_INFO(this->get_logger(), "Starting mission...");
-  current_waypoint_ = 0;
-  if (!waypoints_.empty()) {
+  if (msg->command == "START") {
+    RCLCPP_INFO(this->get_logger(), "Received START command");
+    current_waypoint_ = 0;
+    mission_active_ = true;
     sendNavigationGoal(waypoints_[current_waypoint_]);
+
+    // Publish status update
+    auto status_msg = std::make_unique<moonpie_osamu::msg::BehaviorStatus>();
+    status_msg->timestamp = this->now();
+    status_msg->current_node = "mission_control";
+    status_msg->status = "NAVIGATING";
+    status_msg->details = "Mission started and waypoint following initiated.";
+    behavior_status_pub_->publish(std::move(status_msg));
+  }
+  else if (msg->command == "STOP") {
+    RCLCPP_INFO(this->get_logger(), "Received STOP command");
+    mission_active_ = false;
+    nav_client_->async_cancel_all_goals();
+    RCLCPP_INFO(this->get_logger(), "Navigation goals cancel request sent");
+
+    // Publish status update
+    auto status_msg = std::make_unique<moonpie_osamu::msg::BehaviorStatus>();
+    status_msg->timestamp = this->now();
+    status_msg->current_node = "mission_control";
+    status_msg->status = "IDLE";
+    status_msg->details = "Mission stopped and waypoint following canceled.";
+    behavior_status_pub_->publish(std::move(status_msg));
+  }
+  else if (msg->command == "TEST") {
+    RCLCPP_INFO(this->get_logger(), "Received TEST command");
+    // Publish ready status
+    auto status_msg = std::make_unique<moonpie_osamu::msg::BehaviorStatus>();
+    status_msg->timestamp = this->now();
+    status_msg->current_node = "mission_control";
+    status_msg->status = "READY";
+    status_msg->details = "Mission control node is ready";
+    behavior_status_pub_->publish(std::move(status_msg));
+  }
+  else {
+    RCLCPP_WARN(this->get_logger(), "Unknown command received: %s", msg->command.c_str());
   }
 }
 
@@ -73,7 +137,26 @@ void MissionControl::feedbackCallback(
   rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr,
   const std::shared_ptr<const nav2_msgs::action::NavigateToPose::Feedback> feedback)
 {
-  RCLCPP_INFO(this->get_logger(), "Distance remaining: %.2f", feedback->distance_remaining);
+  // Rate limit distance messages to 3 Hz
+  auto now = this->now();
+  double time_since_last = (now - last_distance_log_time_).seconds();
+  if (time_since_last < 3.0) {
+    return;  // Skip if less than 3 seconds have passed
+  }
+  last_distance_log_time_ = now;
+
+  // Log to terminal at 3 Hz
+  RCLCPP_INFO(this->get_logger(), "Distance remaining: %.2f meters", feedback->distance_remaining);
+
+  // Create and publish the status message
+  auto status_msg = std::make_unique<moonpie_osamu::msg::BehaviorStatus>();
+  status_msg->timestamp = now;
+  status_msg->current_node = "mission_control";
+  status_msg->status = "NAVIGATING";
+  status_msg->details = "Distance remaining: " + std::to_string(feedback->distance_remaining) + " meters";
+  
+  RCLCPP_INFO(this->get_logger(), "Publishing status message to mission/log");
+  behavior_status_pub_->publish(std::move(status_msg));
 }
 
 void MissionControl::resultCallback(

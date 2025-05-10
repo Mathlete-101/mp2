@@ -8,7 +8,8 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "std_msgs/msg/empty.hpp"
+#include "moonpie_osamu/msg/behavior_status.hpp"
+#include "moonpie_osamu/msg/mission_command.hpp"
 
 namespace moonpie_osamu
 {
@@ -28,8 +29,7 @@ private:
   };
 
   // Callbacks
-  void onStartMission(const std_msgs::msg::Empty::SharedPtr msg);
-  void onStopMission(const std_msgs::msg::Empty::SharedPtr msg);
+  void onMissionCommand(const moonpie_osamu::msg::MissionCommand::SharedPtr msg);
   void sendNavigationGoal(const geometry_msgs::msg::PoseStamped& goal);
   void goalResponseCallback(
     const rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr & goal_handle);
@@ -48,14 +48,17 @@ private:
   rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr nav_client_;
 
   // Subscriptions
-  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr start_sub_;
-  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr stop_sub_;
+  rclcpp::Subscription<moonpie_osamu::msg::MissionCommand>::SharedPtr cmd_sub_;
+
+  // Publishers
+  rclcpp::Publisher<moonpie_osamu::msg::BehaviorStatus>::SharedPtr behavior_status_pub_;
 
   // Mission state
   MissionState current_state_;
   size_t current_waypoint_;
   std::vector<geometry_msgs::msg::PoseStamped> waypoints_;
   bool mission_active_;
+  rclcpp::Time last_distance_log_time_;
 };
 
 }  // namespace moonpie_osamu

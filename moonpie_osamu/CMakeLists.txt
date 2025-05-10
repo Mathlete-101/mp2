@@ -17,14 +17,18 @@ find_package(rclcpp_action REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
-# Generate message interfaces
+# Declare message files
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BehaviorStatus.msg"
-  DEPENDENCIES builtin_interfaces std_msgs
+  "msg/MissionCommand.msg"
+  DEPENDENCIES std_msgs
 )
+
+# Ensure message generation occurs before building executables
+ament_export_dependencies(rosidl_default_runtime)
 
 # Include directories
 include_directories(
@@ -43,20 +47,27 @@ add_executable(mission_control
 
 target_include_directories(mission_control PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cpp>
   $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(mission_control
-  ${rclcpp_LIBRARIES}
-  ${rclcpp_action_LIBRARIES}
-)
-
+# Link against generated message dependencies
 ament_target_dependencies(mission_control
   rclcpp
   rclcpp_action
   nav2_msgs
   geometry_msgs
   std_msgs
+)
+
+# Add dependency on generated message targets
+add_dependencies(mission_control ${PROJECT_NAME}__rosidl_typesupport_cpp)
+
+# Link against the message type support
+target_link_libraries(mission_control
+  ${rclcpp_LIBRARIES}
+  ${rclcpp_action_LIBRARIES}
+  ${PROJECT_NAME}__rosidl_typesupport_cpp
 )
 
 # Install the mission control executable
