@@ -48,8 +48,17 @@ def generate_launch_description():
         }.items()
     )
     
+    # Add the mission control panel node
+    mission_control_panel_node = Node(
+        package='moonpie_osamu',
+        executable='mission_control_panel',
+        name='mission_control_panel',
+        output='screen'
+    )
+
     return LaunchDescription([
         use_rviz_arg,
         osamu_launch,
-        robot_visualization_launch
+        robot_visualization_launch,
+        mission_control_panel_node
     ]) 

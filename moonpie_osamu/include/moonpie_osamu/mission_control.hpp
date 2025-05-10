@@ -29,6 +29,7 @@ private:
 
   // Callbacks
   void onStartMission(const std_msgs::msg::Empty::SharedPtr msg);
+  void onStopMission(const std_msgs::msg::Empty::SharedPtr msg);
   void sendNavigationGoal(const geometry_msgs::msg::PoseStamped& goal);
   void goalResponseCallback(
     const rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>::SharedPtr & goal_handle);
@@ -48,6 +49,7 @@ private:
 
   // Subscriptions
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr start_sub_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr stop_sub_;
 
   // Mission state
   MissionState current_state_;
