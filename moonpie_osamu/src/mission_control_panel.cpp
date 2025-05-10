@@ -6,6 +6,9 @@
 #include <QScrollBar>
 #include <QTimer>
 #include <chrono>
+#include <sensor_msgs/msg/compressed_image.hpp>
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/opencv.hpp>
 
 namespace moonpie_osamu
 {
@@ -17,7 +20,7 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
 {
   // Set window properties
   setWindowTitle("Mission Control");
-  resize(600, 400);
+  resize(800, 600);  // Made window larger to accommodate camera feed
 
   // Create central widget and layout
   auto * central_widget = new QWidget(this);
@@ -46,6 +49,13 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   status_label_->setAlignment(Qt::AlignCenter);
   main_layout->addWidget(status_label_);
 
+  // Create camera display
+  camera_display_ = new QLabel();
+  camera_display_->setMinimumSize(640, 480);
+  camera_display_->setStyleSheet("QLabel { background-color: black; }");
+  camera_display_->setAlignment(Qt::AlignCenter);
+  main_layout->addWidget(camera_display_);
+
   // Create log display
   log_display_ = new QTextEdit();
   log_display_->setReadOnly(true);
@@ -70,6 +80,11 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   behavior_status_sub_ = node_->create_subscription<moonpie_osamu::msg::BehaviorStatus>(
     "mission/log", 10,
     std::bind(&MissionControlPanel::onBehaviorStatus, this, std::placeholders::_1));
+
+  // Create subscriber for camera feed
+  camera_sub_ = node_->create_subscription<sensor_msgs::msg::CompressedImage>(
+    "/camera1/camera1/color/image_raw/compressed", 10,
+    std::bind(&MissionControlPanel::onCameraImage, this, std::placeholders::_1));
 
   // Send initial test command
   QTimer::singleShot(1000, this, &MissionControlPanel::sendTestCommand);
@@ -173,6 +188,34 @@ void MissionControlPanel::onBehaviorStatus(const moonpie_osamu::msg::BehaviorSta
     } else if (msg->status == "IDLE") {
       updateConnectionStatus(ConnectionStatus::READY);
     }
+  }
+}
+
+void MissionControlPanel::onCameraImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg)
+{
+  try {
+    // Convert compressed image to cv::Mat
+    cv::Mat frame = cv::imdecode(cv::Mat(msg->data), cv::IMREAD_COLOR);
+    if (frame.empty()) {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to decode compressed image");
+      return;
+    }
+
+    // Convert BGR to RGB
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+
+    // Convert to QImage
+    QImage image(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
+    
+    // Scale image to fit display while maintaining aspect ratio
+    QPixmap pixmap = QPixmap::fromImage(image);
+    pixmap = pixmap.scaled(camera_display_->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    
+    // Update display
+    camera_display_->setPixmap(pixmap);
+  }
+  catch (const std::exception& e) {
+    RCLCPP_ERROR(node_->get_logger(), "Error processing camera image: %s", e.what());
   }
 }
 

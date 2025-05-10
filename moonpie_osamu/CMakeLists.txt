@@ -23,6 +23,9 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(aruco_opencv_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 # Declare message files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -37,6 +40,7 @@ ament_export_dependencies(rosidl_default_runtime)
 # Include directories
 include_directories(
   include
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 # Set up Qt MOC
@@ -119,11 +123,14 @@ target_include_directories(mission_control_panel PUBLIC
 target_link_libraries(mission_control_panel
   rclcpp::rclcpp
   Qt5::Widgets
+  ${OpenCV_LIBS}
   moonpie_osamu__rosidl_typesupport_cpp
 )
 
 ament_target_dependencies(mission_control_panel
   std_msgs
+  cv_bridge
+  sensor_msgs
 )
 
 # Ensure message headers are available before building the executable
