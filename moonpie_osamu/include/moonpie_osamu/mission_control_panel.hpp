@@ -25,6 +25,7 @@ class MissionControlPanel : public QMainWindow
 public:
   enum class ConnectionStatus {
     DISCONNECTED,
+    CONNECTED,
     READY,
     RUNNING
   };
