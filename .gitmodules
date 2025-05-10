@@ -9,4 +9,4 @@
 	url = https://github.com/espressif/esp-idf.git
 [submodule "realsense_ros2"]
 	path = realsense_ros2
-	url = git@github.com:jdgalviss/realsense_ros2.git
+	url = git@github.com:Mathlete-101/realsense_ros2.git
