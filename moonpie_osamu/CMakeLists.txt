@@ -19,6 +19,10 @@ find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(aruco_opencv_msgs REQUIRED)
 
 # Declare message files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -57,7 +61,10 @@ ament_target_dependencies(mission_control
   rclcpp_action
   nav2_msgs
   geometry_msgs
-  std_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  aruco_opencv_msgs
 )
 
 # Add dependency on generated message targets
@@ -68,6 +75,7 @@ target_link_libraries(mission_control
   ${rclcpp_LIBRARIES}
   ${rclcpp_action_LIBRARIES}
   ${PROJECT_NAME}__rosidl_typesupport_cpp
+  tf2_geometry_msgs::tf2_geometry_msgs
 )
 
 # Install the mission control executable
