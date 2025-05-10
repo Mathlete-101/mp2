@@ -21,3 +21,4 @@ libi2c-dev
 ros-humble-aruco
 ros-humble-aruco-ros
 ros-humble-aruco-opencv
+ros-humble-aruco-opencv-messages
