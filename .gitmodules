@@ -7,3 +7,6 @@
 [submodule "beacon/esp-idf"]
 	path = beacon/esp-idf
 	url = https://github.com/espressif/esp-idf.git
+[submodule "realsense_ros2"]
+	path = realsense_ros2
+	url = git@github.com:jdgalviss/realsense_ros2.git
