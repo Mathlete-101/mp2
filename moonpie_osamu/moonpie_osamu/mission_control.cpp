@@ -131,8 +131,13 @@ void MissionControl::onArucoPose(const aruco_opencv_msgs::msg::ArucoDetection::S
       nav_timer_ = this->create_wall_timer(
         std::chrono::seconds(2),  // Increased delay to 2 seconds
         [this]() {
-          RCLCPP_INFO(this->get_logger(), "Starting navigation to world coordinates (8.0, 6.0)");
-          navigateToWorldCoordinates(8.0, 6.0);
+          // Choose a random point in the excavation zone: x in [3.88, 6.88], y in [0, 2]
+          double x_min = 3.88, x_max = 6.88, y_min = 0.0, y_max = 2.0;
+          double x = x_min + static_cast<double>(rand()) / RAND_MAX * (x_max - x_min);
+          double y = y_min + static_cast<double>(rand()) / RAND_MAX * (y_max - y_min);
+          RCLCPP_INFO(this->get_logger(), "Starting navigation to random excavation zone point (%.2f, %.2f)", x, y);
+          // If the point is occupied, another can be chosen later
+          navigateToWorldCoordinates(x, y);
           nav_timer_.reset();  // Clear the timer after use
         }
       );

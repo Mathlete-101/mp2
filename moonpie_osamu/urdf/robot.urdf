@@ -167,4 +167,32 @@
     <child link="camera1_link"/>
     <origin xyz="0.55 0 0.32" rpy="0 0 0"/>
   </joint>
+
+  <!-- Dump link -->
+  <link name="dump_link">
+    <visual>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <!-- Joint from base_link to dump -->
+  <joint name="dump_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="dump_link"/>
+    <origin xyz="-0.55 0 0.32" rpy="0 0 0"/>
+  </joint>
 </robot> 

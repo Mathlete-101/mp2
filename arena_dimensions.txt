@@ -1,0 +1,36 @@
+Artemis Arena Layout Dimensions
+================================
+
+- Total Arena Size: 6.88 m (width) x 5 m (height)
+
+Zones and Features:
+-------------------
+- Obstacle Zone: ~3.88 m (width)
+- Construction Zone: ~3 m (width)
+- Excavation Zone: ~3 m (width)
+- Starting Zone: 2 m (width)
+- Berm: (4.38, 0.25) and (6.38, 0.95)
+
+Key Points:
+-----------
+- The arena is divided vertically into two main sections: Obstacle Zone (~3.88 m) and Construction/Excavation Zone (~3 m).
+- The Starting Zone is a 2 m wide area in the bottom left corner, with no rocks or craters.
+- The Berm is a 2 m x 0.7 m area in the bottom right corner, outlined in green.
+- The Column is located near the center of the arena.
+- The robot starts at (0,0) in the bottom left corner.
+- Example coordinates: X: 5.38 m, Y: 0.6 m (location of Berm center)
+
+Other Notes:
+------------
+- The arena contains various obstacles (circles) and craters (dotted circles) distributed throughout.
+- The arena is oriented with (0,0) at the bottom left.
+- All measurements are in meters (m).
+
+Rectangle Corners (in meters, (x, y) format):
+---------------------------------------------
+- Arena: (0, 0) and (6.88, 5)
+- Obstacle Zone: (0, 0) and (3.88, 5)
+- Construction Zone: (3.88, 2) and (6.88, 5)
+- Excavation Zone: (3.88, 0) and (6.88, 2)
+- Starting Zone: (0, 0) and (2, 2)
+- Berm: (4.38, 0.25) and (6.38, 0.95) 

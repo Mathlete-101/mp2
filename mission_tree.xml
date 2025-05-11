@@ -1,0 +1,16 @@
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <Sequence name="MissionSequence">
+      <WaitForStartCommand/>
+      <FindAruco marker_id="42" output_frame="world" aruco_pose_topic="/aruco_detections"/>
+      <NavigateToPose goal="{excavation_goal}"/>
+      <Dig/>
+      <NavigateToPose goal="{construction_goal}"/>
+      <ScanDumpZone/>
+      <SetDumpGoal dump_zone_center="{dump_zone_center}" dump_goal="{dump_goal}"/>
+      <BackwardNavigateToPose goal="{dump_goal}"/>
+      <Dump/>
+      <WaitForStopCommand/>
+    </Sequence>
+  </BehaviorTree>
+</root> 

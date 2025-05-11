@@ -1,0 +1,1 @@
+/home/moonpie/mp2/moonpie_osamu/launch/mission_control.launch.py

@@ -1,0 +1,1 @@
+/home/moonpie/mp2/moonpie_osamu/build/moonpie_osamu/ament_cmake_core/moonpie_osamuConfig.cmake

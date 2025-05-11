@@ -1,0 +1,1 @@
+/home/moonpie/mp2/moonpie_osamu/launch/camera_only.launch.py

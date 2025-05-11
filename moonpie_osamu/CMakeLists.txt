@@ -26,6 +26,7 @@ find_package(aruco_opencv_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(behaviortree_cpp_v3 REQUIRED)
 
 # Declare message files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -41,6 +42,7 @@ ament_export_dependencies(rosidl_default_runtime)
 include_directories(
   include
   ${OpenCV_INCLUDE_DIRS}
+  ${behaviortree_cpp_v3_INCLUDE_DIRS}
 )
 
 # Set up Qt MOC
@@ -110,6 +112,8 @@ install(DIRECTORY
 # Add mission control panel executable (AFTER message generation)
 add_executable(mission_control_panel
   src/mission_control_panel.cpp
+  src/mission_state.cpp
+  src/behavior_tree_manager.cpp
   include/moonpie_osamu/mission_control_panel.hpp
 )
 
@@ -124,6 +128,7 @@ target_link_libraries(mission_control_panel
   rclcpp::rclcpp
   Qt5::Widgets
   ${OpenCV_LIBS}
+  ${behaviortree_cpp_v3_LIBRARIES}
   moonpie_osamu__rosidl_typesupport_cpp
 )
 
@@ -131,6 +136,7 @@ ament_target_dependencies(mission_control_panel
   std_msgs
   cv_bridge
   sensor_msgs
+  behaviortree_cpp_v3
 )
 
 # Ensure message headers are available before building the executable

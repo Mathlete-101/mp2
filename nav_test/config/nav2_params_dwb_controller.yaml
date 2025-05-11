@@ -128,6 +128,10 @@ local_costmap:
           topic: scan
           marking: true
           clearing: true
+      plugins: ["obstacle_layer", "inflation_layer", "keepout_filter"]
+      keepout_filter:
+        plugin: "nav2_costmap_2d::CostmapFilterInfoLayer"
+        filter_info_topic: "/costmap_filter_info"
 
 global_costmap:
   global_costmap:
@@ -152,6 +156,10 @@ global_costmap:
           topic: scan
           marking: true
           clearing: true
+      plugins: ["obstacle_layer", "inflation_layer", "keepout_filter"]
+      keepout_filter:
+        plugin: "nav2_costmap_2d::CostmapFilterInfoLayer"
+        filter_info_topic: "/costmap_filter_info"
 
 lifecycle_manager:
   ros__parameters:

@@ -1,0 +1,1 @@
+/home/moonpie/mp2/moonpie_osamu/build/moonpie_osamu/rosidl_cmake/rosidl_cmake_export_typesupport_targets-extras.cmake

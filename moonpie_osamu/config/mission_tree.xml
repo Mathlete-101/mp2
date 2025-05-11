@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<root main_tree_to_execute="MainTree">
+    <BehaviorTree ID="MainTree">
+        <Repeat num_cycles="-1">
+            <Sequence name="ExcavationCycle">
+                <!-- Localization Phase -->
+                <Sequence name="Localization">
+                    <Action ID="DetectArUco" />
+                    <Action ID="UpdatePose" />
+                </Sequence>
+                
+                <!-- Excavation Phase -->
+                <Sequence name="Excavation">
+                    <Action ID="NavigateToExcavation" />
+                    <Action ID="ExecuteDigging" />
+                    <Action ID="RetractActuator" />
+                </Sequence>
+                
+                <!-- Dumping Phase -->
+                <Sequence name="Dumping">
+                    <Action ID="NavigateToDump" />
+                    <Action ID="ExecuteDumping" />
+                </Sequence>
+                
+                <!-- Mission Progress Check -->
+                <Condition ID="CheckMissionComplete" />
+            </Sequence>
+        </Repeat>
+    </BehaviorTree>
+</root> 

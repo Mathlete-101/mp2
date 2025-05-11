@@ -1,0 +1,1 @@
+/home/moonpie/mp2/moonpie_osamu/build/moonpie_osamu/rosidl_generator_c/moonpie_osamu/msg/detail/behavior_status__functions.h

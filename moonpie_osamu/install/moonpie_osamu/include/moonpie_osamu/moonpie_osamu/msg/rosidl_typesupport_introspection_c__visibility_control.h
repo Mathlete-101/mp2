@@ -1,0 +1,1 @@
+/home/moonpie/mp2/moonpie_osamu/build/moonpie_osamu/rosidl_typesupport_introspection_c/moonpie_osamu/msg/rosidl_typesupport_introspection_c__visibility_control.h
