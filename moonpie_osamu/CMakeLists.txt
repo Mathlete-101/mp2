@@ -27,6 +27,8 @@ find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(behaviortree_cpp_v3 REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(realsense2_camera REQUIRED)
 
 # Declare message files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -130,6 +132,7 @@ target_link_libraries(mission_control_panel
   ${OpenCV_LIBS}
   ${behaviortree_cpp_v3_LIBRARIES}
   moonpie_osamu__rosidl_typesupport_cpp
+  image_transport::image_transport
 )
 
 ament_target_dependencies(mission_control_panel
@@ -137,6 +140,8 @@ ament_target_dependencies(mission_control_panel
   cv_bridge
   sensor_msgs
   behaviortree_cpp_v3
+  image_transport
+  realsense2_camera
 )
 
 # Ensure message headers are available before building the executable

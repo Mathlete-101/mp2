@@ -11,7 +11,7 @@ This is the main launch file to use when you want to visualize both the robot an
 """
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -40,14 +40,6 @@ def generate_launch_description():
         description='Whether to launch rtabmap_viz'
     )
     
-
-    # Include the RealSense launch file
-    realsense_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_share, 'launch', 'camera_only.launch.py')
-        )
-    )
-
     # Include the robot description launch file
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -55,49 +47,71 @@ def generate_launch_description():
         ])
     )
 
-
-    # Include the SLAM launch file
-    slam_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_share, 'launch', 'slam.launch.py')
-        ),
-        launch_arguments={
-            'use_rtabmap_viz': use_rtabmap_viz
-        }.items()
+    # Include the RealSense launch file with a delay
+    realsense_launch = TimerAction(
+        period=2.0,
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(pkg_share, 'launch', 'camera_only.launch.py')
+                )
+            )
+        ]
     )
 
-    # Include the navigation launch file
-    nav_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(nav_test_share, 'launch', 'nav_test.launch.py')
-        ),
-        launch_arguments={
-            'use_rviz': 'False'  # Disable RViz in nav_test since we're launching it here
-        }.items()
+    # Include the SLAM launch file with a delay
+    slam_launch = TimerAction(
+        period=4.0,
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(pkg_share, 'launch', 'slam.launch.py')
+                ),
+                launch_arguments={
+                    'use_rtabmap_viz': use_rtabmap_viz
+                }.items()
+            )
+        ]
     )
 
-    # Include the ArUco detection launch file
-    aruco_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_share, 'launch', 'aruco.launch.py')
-        )
+    # Include the navigation launch file with a delay
+    nav_launch = TimerAction(
+        period=6.0,
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(nav_test_share, 'launch', 'nav_test.launch.py')
+                ),
+                launch_arguments={
+                    'use_rviz': 'False'  # Disable RViz in nav_test since we're launching it here
+                }.items()
+            )
+        ]
     )
 
-    # Launch the mission control node
-    mission_control_node = Node(
-        package='moonpie_osamu',
-        executable='mission_control',
-        name='mission_control',
-        output='screen'
+    # Include the ArUco detection launch file with a delay
+    aruco_launch = TimerAction(
+        period=8.0,
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(pkg_share, 'launch', 'aruco.launch.py')
+                )
+            )
+        ]
     )
-    
-    # Launch the costmap filter info server
-    costmap_filter_info_server_node = Node(
-        package='nav2_costmap_2d',
-        executable='costmap_filter_info_server',
-        name='costmap_filter_info_server',
-        output='screen',
-        parameters=[os.path.join(pkg_share, 'config', 'costmap_filter_info.yaml')]
+
+    # Launch the mission control node with a delay
+    mission_control_node = TimerAction(
+        period=10.0,
+        actions=[
+            Node(
+                package='moonpie_osamu',
+                executable='mission_control',
+                name='mission_control',
+                output='screen'
+            )
+        ]
     )
     
     # Create the launch description and populate
@@ -114,6 +128,5 @@ def generate_launch_description():
     ld.add_action(nav_launch)
     ld.add_action(aruco_launch)
     ld.add_action(mission_control_node)
-    ld.add_action(costmap_filter_info_server_node)
 
     return ld 

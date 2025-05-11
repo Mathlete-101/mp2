@@ -30,7 +30,8 @@ def generate_launch_description():
             'camera_namespace': '/camera1',
             'enable_infra1': 'true',
             'enable_infra2': 'true',
-            'enable_sync': 'true'
+            'enable_sync': 'true',
+            'depth_module.emitter_enabled': 'true'
         }.items()
     )
 
