@@ -10,3 +10,6 @@
 [submodule "realsense_ros2"]
 	path = realsense_ros2
 	url = git@github.com:Mathlete-101/realsense_ros2.git
+[submodule "realsense-ros"]
+	path = realsense-ros
+	url = git@github.com:Mathlete-101/realsense-ros.git
