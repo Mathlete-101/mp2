@@ -91,15 +91,14 @@ def generate_launch_description():
         output='screen'
     )
     
-    # Launch the costmap filter info server
-    costmap_filter_info_server_node = Node(
-        package='nav2_costmap_2d',
-        executable='costmap_filter_info_server',
-        name='costmap_filter_info_server',
-        output='screen',
-        parameters=[os.path.join(pkg_share, 'config', 'costmap_filter_info.yaml')]
+    # Add the mission control panel node
+    mission_control_panel_node = Node(
+        package='moonpie_osamu',
+        executable='mission_control_panel',
+        name='mission_control_panel',
+        output='screen'
     )
-    
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -114,6 +113,6 @@ def generate_launch_description():
     ld.add_action(nav_launch)
     ld.add_action(aruco_launch)
     ld.add_action(mission_control_node)
-    ld.add_action(costmap_filter_info_server_node)
+    ld.add_action(mission_control_panel_node)
 
     return ld 
