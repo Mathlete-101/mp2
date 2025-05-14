@@ -1,1 +1,0 @@
-/home/moonpie/mp2/moonpie_osamu/build/moonpie_osamu/ament_cmake_export_include_directories/ament_cmake_export_include_directories-extras.cmake

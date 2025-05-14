@@ -1,1 +1,0 @@
-/home/moonpie/mp2/moonpie_osamu/build/moonpie_osamu/rosidl_typesupport_introspection_cpp/moonpie_osamu/msg/detail/mission_command__rosidl_typesupport_introspection_cpp.hpp

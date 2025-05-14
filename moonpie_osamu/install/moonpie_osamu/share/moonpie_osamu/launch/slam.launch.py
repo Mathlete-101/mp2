@@ -1,1 +1,0 @@
-/home/moonpie/mp2/moonpie_osamu/launch/slam.launch.py

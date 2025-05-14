@@ -1,1 +1,0 @@
-/home/moonpie/mp2/moonpie_osamu/build/moonpie_osamu/rosidl_generator_cpp/moonpie_osamu/msg/detail/behavior_status__struct.hpp

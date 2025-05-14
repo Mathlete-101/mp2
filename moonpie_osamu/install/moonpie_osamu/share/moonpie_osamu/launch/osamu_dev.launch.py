@@ -1,1 +1,0 @@
-/home/moonpie/mp2/moonpie_osamu/launch/osamu_dev.launch.py

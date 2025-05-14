@@ -1,1 +1,0 @@
-/home/moonpie/mp2/moonpie_osamu/launch/test_realsense_d435i_infra_no_imu.launch.py

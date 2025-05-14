@@ -1,1 +1,0 @@
-/home/moonpie/mp2/moonpie_osamu/build/moonpie_osamu/rosidl_typesupport_fastrtps_cpp/moonpie_osamu/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
