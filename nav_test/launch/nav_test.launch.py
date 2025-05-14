@@ -72,7 +72,7 @@ def generate_launch_description():
             'map': map_yaml_file,
             'slam': 'False',
             'use_lifecycle_mgr': 'true',
-            'map_server': 'false',  # Disable map server since we're not using a static map
+            'map_server': 'true',  # Enable map server to provide map for costmap
             'amcl': 'false',  # Disable AMCL since we're not using a static map
             'controller_server': 'true',
             'planner_server': 'true',
