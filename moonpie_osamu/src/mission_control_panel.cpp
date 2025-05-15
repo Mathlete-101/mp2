@@ -229,11 +229,6 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
     "arduino_command", 10,
     std::bind(&MissionControlPanel::onArduinoControl, this, std::placeholders::_1));
 
-  // Create subscriber for cmd_vel
-  cmd_vel_sub_ = node_->create_subscription<geometry_msgs::msg::Twist>(
-    "cmd_vel", 10,
-    std::bind(&MissionControlPanel::onCmdVel, this, std::placeholders::_1));
-
   // Send initial test command
   QTimer::singleShot(1000, this, &MissionControlPanel::sendTestCommand);
 
@@ -285,38 +280,10 @@ void MissionControlPanel::updateConnectionStatus(ConnectionStatus status)
   }
 }
 
-void MissionControlPanel::sendTestCommand()
+void MissionControlPanel::appendLog(const QString& message)
 {
-  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-  msg->command = "TEST";
-  cmd_pub_->publish(std::move(msg));
-  appendLog("Sent test command to mission control node...");
-}
-
-void MissionControlPanel::onStartMission()
-{
-  if (connection_status_ != ConnectionStatus::READY) {
-    appendLog("Cannot start mission: Not connected to mission control node");
-    return;
-  }
-
-  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-  msg->command = "START";
-  cmd_pub_->publish(std::move(msg));
-  appendLog("Sent start command");
-}
-
-void MissionControlPanel::onStopMission()
-{
-  if (connection_status_ != ConnectionStatus::READY) {
-    appendLog("Cannot stop mission: Not connected to mission control node");
-    return;
-  }
-
-  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-  msg->command = "STOP";
-  cmd_pub_->publish(std::move(msg));
-  appendLog("Sent stop command");
+  logDisplay->moveCursor(QTextCursor::Start);
+  logDisplay->insertPlainText(message + "\n");
 }
 
 void MissionControlPanel::onBehaviorStatus(const moonpie_osamu::msg::BehaviorStatus::SharedPtr msg)
@@ -369,45 +336,6 @@ void MissionControlPanel::onCameraImage(const sensor_msgs::msg::CompressedImage:
   catch (const std::exception& e) {
     RCLCPP_ERROR(node_->get_logger(), "Error processing camera image: %s", e.what());
   }
-}
-
-void MissionControlPanel::appendLog(const QString& message)
-{
-  logDisplay->moveCursor(QTextCursor::Start);
-  logDisplay->insertPlainText(message + "\n");
-}
-
-void MissionControlPanel::onStartDiggingSequence()
-{
-  // Digging sequence is independent of mission control node
-  // Always send the command regardless of connection status
-  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-  msg->command = "START_DIG";
-  cmd_pub_->publish(std::move(msg));
-  appendLog("Sent start digging sequence command");
-  updateConnectionStatus(ConnectionStatus::RUNNING);
-}
-
-void MissionControlPanel::onStopDiggingSequence()
-{
-  // Digging sequence is independent of mission control node
-  // Always send the command regardless of connection status
-  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-  msg->command = "STOP_DIG";
-  cmd_pub_->publish(std::move(msg));
-  appendLog("Sent stop digging sequence command");
-  updateConnectionStatus(ConnectionStatus::READY);
-}
-
-void MissionControlPanel::onStartDigAndDumpSequence()
-{
-  // Digging sequence is independent of mission control node
-  // Always send the command regardless of connection status
-  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-  msg->command = "START_DIG_AND_DUMP";
-  cmd_pub_->publish(std::move(msg));
-  appendLog("Sent start dig and dump sequence command");
-  updateConnectionStatus(ConnectionStatus::RUNNING);
 }
 
 void MissionControlPanel::onArduinoControl(const std_msgs::msg::String::SharedPtr msg)
@@ -467,7 +395,7 @@ void MissionControlPanel::onArduinoControl(const std_msgs::msg::String::SharedPt
         kiLabel->setText(QString::number(obj["Ki"].toDouble(), 'f', 2));
       }
 
-      // Handle velocity message format
+      // Handle velocity values from the JSON message
       if (obj.contains("linearx_mps")) {
         linearXLabel->setText(QString("%1 m/s").arg(obj["linearx_mps"].toDouble(), 0, 'f', 2));
       }
@@ -481,15 +409,6 @@ void MissionControlPanel::onArduinoControl(const std_msgs::msg::String::SharedPt
   }
 }
 
-void MissionControlPanel::onCmdVel(const geometry_msgs::msg::Twist::SharedPtr msg)
-{
-  // Update linear X velocity
-  linearXLabel->setText(QString("%1 m/s").arg(msg->linear.x, 0, 'f', 2));
-  
-  // Update angular Z velocity
-  angularZLabel->setText(QString("%1 rad/s").arg(msg->angular.z, 0, 'f', 2));
-}
-
 void MissionControlPanel::onSendConfig()
 {
   auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
@@ -500,6 +419,73 @@ void MissionControlPanel::onSendConfig()
   appendLog(QString("Sent configuration: dig_time=%1, travel_time=%2")
     .arg(digTimeSpinBox->value() / 10.0)
     .arg(travelTimeSpinBox->value() / 10.0));
+}
+
+void MissionControlPanel::onStartMission()
+{
+  if (connection_status_ != ConnectionStatus::READY) {
+    appendLog("Cannot start mission: Not connected to mission control node");
+    return;
+  }
+
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "START";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent start command");
+}
+
+void MissionControlPanel::onStopMission()
+{
+  if (connection_status_ != ConnectionStatus::READY) {
+    appendLog("Cannot stop mission: Not connected to mission control node");
+    return;
+  }
+
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "STOP";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent stop command");
+}
+
+void MissionControlPanel::onStartDiggingSequence()
+{
+  // Digging sequence is independent of mission control node
+  // Always send the command regardless of connection status
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "START_DIG";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent start digging sequence command");
+  updateConnectionStatus(ConnectionStatus::RUNNING);
+}
+
+void MissionControlPanel::onStopDiggingSequence()
+{
+  // Digging sequence is independent of mission control node
+  // Always send the command regardless of connection status
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "STOP_DIG";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent stop digging sequence command");
+  updateConnectionStatus(ConnectionStatus::READY);
+}
+
+void MissionControlPanel::onStartDigAndDumpSequence()
+{
+  // Digging sequence is independent of mission control node
+  // Always send the command regardless of connection status
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "START_DIG_AND_DUMP";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent start dig and dump sequence command");
+  updateConnectionStatus(ConnectionStatus::RUNNING);
+}
+
+void MissionControlPanel::sendTestCommand()
+{
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "TEST";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent test command to mission control node...");
 }
 
 std::shared_ptr<rclcpp::Node> MissionControlPanel::getNode()

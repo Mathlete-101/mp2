@@ -81,6 +81,7 @@ private:
   QLabel* linearXLabel;
   QLabel* angularZLabel;
 
+  // ROS publishers and subscribers
   rclcpp::Publisher<moonpie_osamu::msg::MissionCommand>::SharedPtr cmd_pub_;
   rclcpp::Subscription<moonpie_osamu::msg::BehaviorStatus>::SharedPtr behavior_status_sub_;
   rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr camera_sub_;
