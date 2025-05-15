@@ -20,6 +20,8 @@ constexpr double DUMP_ROTATE_EVERY_S = 10.0;
 constexpr double DUMP_ROTATE_PERIOD_S = 1.0;
 constexpr double ACTUATOR_RETRACT_S = 4.0;
 constexpr double DRIVE_AND_DIG_SPEED_MPS = 0.075;
+constexpr double BACKWARD_TRAVEL_SPEED_MPS = 0.2;  // Speed for backward travel
+constexpr double DUMP_BELT_DURATION_S = 5.0;  // Duration to run dump belt
 
 // PID constants
 constexpr double Kp = 4.0;
@@ -82,7 +84,7 @@ private:
         drive_forward_s_, dump_travel_time_s_);
       publishStatus("CONFIG", "Updated digging sequence timing");
     }
-    else if (msg->command == "START_DIG" && !is_sequence_running_)
+    else if ((msg->command == "START_DIG" || msg->command == "START_DIG_AND_DUMP") && !is_sequence_running_)
     {
       RCLCPP_INFO(this->get_logger(), "Starting digging sequence");
       is_sequence_running_ = true;
@@ -101,6 +103,9 @@ private:
       };
       prev_control_msg_ = control_msg_;
       publishStatus("DIGGING", "Starting digging sequence");
+
+      // Store whether this is a dig+dump sequence
+      is_dig_and_dump_ = (msg->command == "START_DIG_AND_DUMP");
 
       // Send disable manual control command
       auto disable_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
@@ -261,6 +266,72 @@ private:
         }
         else
         {
+          if (is_dig_and_dump_)
+          {
+            // Move to backward travel step
+            current_step_++;
+            step_start_time_ = current_time;
+          }
+          else
+          {
+            // Stop everything
+            if (control_msg_["dig_belt"] != 0 || 
+                control_msg_["actuator_retract"] || 
+                control_msg_["dump_belt"] != 0)
+            {
+              control_msg_["dig_belt"] = 0;
+              control_msg_["actuator_retract"] = false;
+              control_msg_["dump_belt"] = 0;
+              sendControlMessage();
+            }
+            
+            // Stop the robot
+            auto twist_msg = geometry_msgs::msg::Twist();
+            cmd_vel_pub_->publish(twist_msg);
+            
+            // Sequence complete
+            is_sequence_running_ = false;
+            publishStatus("IDLE", "Digging sequence completed");
+            RCLCPP_INFO(this->get_logger(), "Digging sequence completed");
+
+            // Send enable manual control command
+            auto enable_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+            enable_msg->command = "ENABLE_MANUAL";
+            cmd_pub_->publish(std::move(enable_msg));
+          }
+        }
+        break;
+
+      case 3: // Backward travel (only in dig+dump sequence)
+        if (elapsed < dump_travel_time_s_)
+        {
+          // Drive backward
+          auto twist_msg = geometry_msgs::msg::Twist();
+          twist_msg.linear.x = -BACKWARD_TRAVEL_SPEED_MPS;
+          cmd_vel_pub_->publish(twist_msg);
+        }
+        else
+        {
+          // Stop driving
+          auto twist_msg = geometry_msgs::msg::Twist();
+          cmd_vel_pub_->publish(twist_msg);
+          current_step_++;
+          step_start_time_ = current_time;
+        }
+        break;
+
+      case 4: // Dump belt activation (only in dig+dump sequence)
+        if (elapsed < DUMP_BELT_DURATION_S)
+        {
+          // Only update and send if values are different
+          if (control_msg_["dump_belt"] != 1)
+          {
+            control_msg_["dump_belt"] = 1;
+            sendControlMessage();
+          }
+        }
+        else
+        {
           // Stop everything
           if (control_msg_["dig_belt"] != 0 || 
               control_msg_["actuator_retract"] || 
@@ -278,9 +349,8 @@ private:
           
           // Sequence complete
           is_sequence_running_ = false;
-          publishStatus("IDLE", "Digging sequence completed");
-          //here
-          RCLCPP_INFO(this->get_logger(), "Digging sequence completed");
+          publishStatus("IDLE", "Dig and dump sequence completed");
+          RCLCPP_INFO(this->get_logger(), "Dig and dump sequence completed");
 
           // Send enable manual control command
           auto enable_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
@@ -305,6 +375,7 @@ private:
   json prev_control_msg_;  // Track previous state for change detection
   double drive_forward_s_;  // Configurable drive forward time
   double dump_travel_time_s_;  // Configurable dump travel time
+  bool is_dig_and_dump_ = false;  // Whether this is a dig+dump sequence
 };
 
 int main(int argc, char * argv[])
