@@ -148,4 +148,25 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# Add digging_sequence_node executable
+add_executable(digging_sequence_node src/digging_sequence_node.cpp)
+ament_target_dependencies(digging_sequence_node
+  rclcpp
+  std_msgs
+  geometry_msgs
+)
+target_link_libraries(digging_sequence_node
+  ${rclcpp_LIBRARIES}
+  ${std_msgs_LIBRARIES}
+  ${geometry_msgs_LIBRARIES}
+)
+
+# Install all targets
+install(TARGETS
+  mission_control_panel
+  mission_control_node
+  digging_sequence_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package() 

@@ -81,9 +81,9 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
     "mission/log", 10,
     std::bind(&MissionControlPanel::onBehaviorStatus, this, std::placeholders::_1));
 
-  // Create subscriber for camera feed
+  // Create subscriber for camera feed - using D435 color image
   camera_sub_ = node_->create_subscription<sensor_msgs::msg::CompressedImage>(
-    "/camera1/camera1/color/image_raw/compressed", 10,
+    "/rs_d435/image_raw/compressed", 10,
     std::bind(&MissionControlPanel::onCameraImage, this, std::placeholders::_1));
 
   // Send initial test command

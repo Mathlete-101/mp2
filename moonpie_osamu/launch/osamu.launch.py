@@ -5,7 +5,7 @@ It launches:
 2. The RealSense D435 camera driver with pointcloud enabled
 3. SLAM nodes for mapping
 4. ArUco marker detection
-5. Navigation system
+5. Navigation system (optional)
 6. Mission control system
 This is the main launch file to use when you want to visualize both the robot and camera data with SLAM.
 """
@@ -22,7 +22,6 @@ import os
 def generate_launch_description():
     # Get the launch directory
     pkg_share = FindPackageShare('moonpie_osamu').find('moonpie_osamu')
-    nav_test_share = FindPackageShare('nav_test').find('nav_test')
     
     # Declare the launch arguments
     use_rviz = LaunchConfiguration('use_rviz')
@@ -39,7 +38,14 @@ def generate_launch_description():
         default_value='False',
         description='Whether to launch rtabmap_viz'
     )
-    
+
+    # Declare the launch argument for navigation
+    use_navigation = LaunchConfiguration('use_navigation')
+    use_navigation_arg = DeclareLaunchArgument(
+        'use_navigation',
+        default_value='False',
+        description='Whether to launch navigation'
+    )
 
     # Include the RealSense launch file
     realsense_launch = IncludeLaunchDescription(
@@ -55,7 +61,6 @@ def generate_launch_description():
         ])
     )
 
-
     # Include the SLAM launch file
     slam_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -66,11 +71,12 @@ def generate_launch_description():
         }.items()
     )
 
-    # Include the navigation launch file
+    # Include the navigation launch file only if use_navigation is True
     nav_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(nav_test_share, 'launch', 'nav_test.launch.py')
+            os.path.join(pkg_share, 'launch', 'navigation.launch.py')
         ),
+        condition=IfCondition(use_navigation),
         launch_arguments={
             'use_rviz': 'False'  # Disable RViz in nav_test since we're launching it here
         }.items()
@@ -105,6 +111,7 @@ def generate_launch_description():
     # Add the launch arguments
     ld.add_action(use_rviz_arg)
     ld.add_action(use_rtabmap_viz_arg)
+    ld.add_action(use_navigation_arg)
 
     # Add the launch files
     ld.add_action(robot_description_launch)

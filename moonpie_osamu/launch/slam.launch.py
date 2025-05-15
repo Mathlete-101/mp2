@@ -1,14 +1,13 @@
 """
 This launch file launches RTAB-Map for SLAM using a depth camera.
 It launches:
-1. RGBD Synchronization node
-2. RTAB-Map core node configured for depth input
-3. RTAB-Map visualization node (optional)
-4. Robot Localization EKF node (optional)
+1. RTAB-Map core node configured for depth input
+2. RTAB-Map visualization node (optional)
+3. Robot Localization EKF node (optional)
 """
 
 # Requirements:
-#   A realsense D435i
+#   A realsense D435i and T265
 #   Install realsense2 ros2 package (ros-$ROS_DISTRO-realsense2-camera)
 #   Install robot_localization package (ros-$ROS_DISTRO-robot-localization)
 # Example:
@@ -20,7 +19,7 @@ from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
 from launch_ros.actions import Node, SetParameter
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, SetEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import LaunchConfiguration
@@ -40,40 +39,45 @@ def generate_launch_description():
         default_value='False',
         description='Whether to use IMU data for odometry fusion'
     )
+
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     
     parameters=[{
-          'frame_id':'base_link',
-          'subscribe_stereo':True,
-          'subscribe_odom_info':True,
-          'publish_tf':True,
-          'publish_map':True,
-          'publish_grid_map':True,
-          'publish_cloud_map':True,
-          'publish_global_path':True,
-          'cloud_noise_filtering_radius':0.05,
-          'cloud_noise_filtering_min_neighbors':2,
-          'cloud_ceiling_height':2.0,
-          'cloud_floor_height':0.1,
-          'cloud_max_depth':3.0,
-          'cloud_min_depth':0.1,
-          'cloud_voxel_size':0.05,
-          'cloud_output_frame':'map',
-          'cloud_ceiling_filtering':True,
-          'cloud_floor_filtering':True,
-          'cloud_noise_filtering':True,
+          'queue_size': 20,
+          'frame_id': 'camera_link_d435',
+          'use_sim_time': use_sim_time,
+          'subscribe_depth': True,
+          'publish_tf': True,
+          'publish_map': True,
+          'publish_grid_map': True,
+          'publish_cloud_map': True,
+          'publish_global_path': True,
+          'cloud_noise_filtering_radius': 0.05,
+          'cloud_noise_filtering_min_neighbors': 2,
+          'cloud_ceiling_height': 2.0,
+          'cloud_floor_height': 0.1,
+          'cloud_max_depth': 3.0,
+          'cloud_min_depth': 0.1,
+          'cloud_voxel_size': 0.05,
+          'cloud_output_frame': 'map',
+          'cloud_ceiling_filtering': True,
+          'cloud_floor_filtering': True,
+          'cloud_noise_filtering': True,
           # QoS settings for map topics
           'qos_map': 'Reliable,Transient',
           'qos_grid_map': 'Reliable,Transient',
           'qos_cloud_map': 'Reliable,Transient'}]
 
     remappings=[
-          ('left/image_rect', '/camera1/camera1/infra1/image_rect_raw'),
-          ('left/camera_info', '/camera1/camera1/infra1/camera_info'),
-          ('right/image_rect', '/camera1/camera1/infra2/image_rect_raw'),
-          ('right/camera_info', '/camera1/camera1/infra2/camera_info'),
           # Remap grid_map to map
           ('grid_map', 'map'),
-          ('grid_map_updates', 'map_updates')]
+          ('grid_map_updates', 'map_updates'),
+          # Add T265 odometry remapping
+          ('odom', 'rs_t265/odom'),
+          # Add D435 camera remappings
+          ('rgb/image', '/rs_d435/image_raw'),
+          ('rgb/camera_info', 'rs_d435/image_raw/camera_info'),
+          ('depth/image', '/rs_d435/aligned_depth/image_raw')]
 
     # Get the path to the EKF config file
     ekf_config_path = os.path.join(
@@ -86,29 +90,13 @@ def generate_launch_description():
         use_rtabmap_viz_arg,
         use_imu_arg,
         
+        # Set env var to print messages to stdout immediately
+        SetEnvironmentVariable('RCUTILS_CONSOLE_STDOUT_LINE_BUFFERED', '1'),
+        
         #Hack to disable IR emitter
         SetParameter(name='depth_module.emitter_enabled', value=0),
 
-        # Original stereo odometry node (only when not using IMU)
-        Node(
-            package='rtabmap_odom', 
-            executable='stereo_odometry', 
-            output='log',
-            parameters=parameters,
-            remappings=remappings,
-            arguments=['--ros-args', '--log-level', 'stereo_odometry:=warn'],
-            condition=UnlessCondition(use_imu)),
-
         # Robot Localization system nodes (only when using IMU)
-        Node(
-            package='rtabmap_odom', 
-            executable='stereo_odometry', 
-            output='log',
-            parameters=parameters,
-            remappings=remappings + [('odom', '/stereo_odometry/odom')],
-            arguments=['--ros-args', '--log-level', 'stereo_odometry:=warn'],
-            condition=IfCondition(use_imu)),
-
         Node(
             package='robot_localization',
             executable='ekf_node',
@@ -122,10 +110,10 @@ def generate_launch_description():
         Node(
             package='rtabmap_slam', 
             executable='rtabmap', 
-            output='log',
+            output='screen',
             parameters=parameters,
             remappings=remappings,
-            arguments=['-d', '--ros-args', '--log-level', 'rtabmap:=warn']),
+            arguments=['-d']),
 
         Node(
             package='rtabmap_viz', 

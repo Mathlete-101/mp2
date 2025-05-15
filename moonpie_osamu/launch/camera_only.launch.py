@@ -15,36 +15,16 @@ from launch_ros.substitutions import FindPackageShare
 import os
 
 def generate_launch_description():
+    # Get the realsense_ros2 package share
+    realsense_share = FindPackageShare('realsense_ros2').find('realsense_ros2')
+
     # Include the RealSense launch file
     realsense_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
-            os.path.join(
-                FindPackageShare('realsense2_camera').find('realsense2_camera'),
-                'launch',
-                'rs_launch.py'
-            )
-        ]),
-        launch_arguments={
-            'pointcloud.enable': 'true',
-            'camera_name': 'camera1',
-            'camera_namespace': '/camera1',
-            'enable_infra1': 'true',
-            'enable_infra2': 'true',
-            'enable_sync': 'true'
-        }.items()
+            os.path.join(realsense_share, 'launch', 'realsense_launch.py')
+        ])
     )
-
-    # Add static transform from camera link to camera optical frame
-    camera_link_to_optical = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='camera_link_to_optical',
-        arguments=['0', '0', '0', '0', '0', '0', 'camera1_link', 'camera1_depth_optical_frame']
-    )
-
-
     
     return LaunchDescription([
-        realsense_launch,
-        camera_link_to_optical
+        realsense_launch
     ]) 
