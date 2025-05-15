@@ -75,11 +75,38 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   startDiggingBtn = new QPushButton("Start Digging", this);
   stopDiggingBtn = new QPushButton("Stop Digging", this);
 
+  // Create configuration controls
+  QHBoxLayout* configLayout = new QHBoxLayout();
+  
+  // Dig time control
+  QLabel* digTimeLabel = new QLabel("Dig Time (0.1s):", this);
+  digTimeSpinBox = new QSpinBox(this);
+  digTimeSpinBox->setRange(10, 1000);  // 1.0s to 100.0s
+  digTimeSpinBox->setValue(200);  // Default to 20.0s
+  digTimeSpinBox->setSingleStep(1);
+  configLayout->addWidget(digTimeLabel);
+  configLayout->addWidget(digTimeSpinBox);
+
+  // Travel time control
+  QLabel* travelTimeLabel = new QLabel("Travel Time (0.1s):", this);
+  travelTimeSpinBox = new QSpinBox(this);
+  travelTimeSpinBox->setRange(10, 1000);  // 1.0s to 100.0s
+  travelTimeSpinBox->setValue(30);  // Default to 3.0s
+  travelTimeSpinBox->setSingleStep(1);
+  configLayout->addWidget(travelTimeLabel);
+  configLayout->addWidget(travelTimeSpinBox);
+
+  // Send config button
+  sendConfigBtn = new QPushButton("Send Config", this);
+  sendConfigBtn->setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 10px; font-size: 14px; }");
+  configLayout->addWidget(sendConfigBtn);
+
   // Style the buttons
   startDiggingBtn->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-size: 14px; }");
   stopDiggingBtn->setStyleSheet("QPushButton { background-color: #f44336; color: white; padding: 10px; font-size: 14px; }");
 
   // Add buttons to digging layout
+  diggingLayout->addLayout(configLayout);
   diggingLayout->addWidget(startDiggingBtn);
   diggingLayout->addWidget(stopDiggingBtn);
   diggingLayout->addStretch();
@@ -177,6 +204,7 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   // Connect button signals to slots
   connect(startDiggingBtn, &QPushButton::clicked, this, &MissionControlPanel::onStartDiggingSequence);
   connect(stopDiggingBtn, &QPushButton::clicked, this, &MissionControlPanel::onStopDiggingSequence);
+  connect(sendConfigBtn, &QPushButton::clicked, this, &MissionControlPanel::onSendConfig);
 
   // Create command publisher
   cmd_pub_ = node_->create_publisher<moonpie_osamu::msg::MissionCommand>(
@@ -445,6 +473,18 @@ void MissionControlPanel::onCmdVel(const geometry_msgs::msg::Twist::SharedPtr ms
   
   // Update angular Z velocity
   angularZLabel->setText(QString("%1 rad/s").arg(msg->angular.z, 0, 'f', 2));
+}
+
+void MissionControlPanel::onSendConfig()
+{
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "CONFIG";
+  msg->dig_time = digTimeSpinBox->value();
+  msg->travel_time = travelTimeSpinBox->value();
+  cmd_pub_->publish(std::move(msg));
+  appendLog(QString("Sent configuration: dig_time=%1, travel_time=%2")
+    .arg(digTimeSpinBox->value() / 10.0)
+    .arg(travelTimeSpinBox->value() / 10.0));
 }
 
 std::shared_ptr<rclcpp::Node> MissionControlPanel::getNode()

@@ -8,6 +8,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
+#include <QSpinBox>
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <moonpie_osamu/msg/behavior_status.hpp>
@@ -41,6 +42,7 @@ private slots:
   void onStartDiggingSequence();
   void onStopDiggingSequence();
   void sendTestCommand();
+  void onSendConfig();
 
 private:
   void setStatusLabel(ConnectionStatus status);
@@ -60,6 +62,9 @@ private:
   QTextEdit* logDisplay;
   QPushButton* startDiggingBtn;
   QPushButton* stopDiggingBtn;
+  QPushButton* sendConfigBtn;
+  QSpinBox* digTimeSpinBox;
+  QSpinBox* travelTimeSpinBox;
 
   // Arduino control status labels
   QLabel* cmdStatusLabel;

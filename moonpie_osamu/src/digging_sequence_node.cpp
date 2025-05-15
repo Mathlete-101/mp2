@@ -15,7 +15,7 @@ using json = nlohmann::json;
 
 // Timing constants from arduino_control.py
 constexpr double ACTUATOR_EXTEND_S = 6.7;
-constexpr double DRIVE_FORWARD_S = 20.0;
+constexpr double DRIVE_FORWARD_S_DEFAULT = 20.0;  // Default value
 constexpr double DUMP_ROTATE_EVERY_S = 10.0;
 constexpr double DUMP_ROTATE_PERIOD_S = 1.0;
 constexpr double ACTUATOR_RETRACT_S = 4.0;
@@ -60,6 +60,10 @@ public:
     // Initialize previous state
     prev_control_msg_ = control_msg_;
 
+    // Initialize timing values
+    drive_forward_s_ = DRIVE_FORWARD_S_DEFAULT;
+    dump_travel_time_s_ = 3.0;  // Initialize to 3.0 seconds
+
     // Publish initial status
     publishStatus("IDLE", "Digging sequence node initialized");
 
@@ -69,7 +73,16 @@ public:
 private:
   void dig_command_callback(const moonpie_osamu::msg::MissionCommand::SharedPtr msg)
   {
-    if (msg->command == "START_DIG" && !is_sequence_running_)
+    if (msg->command == "CONFIG")
+    {
+      // Update timing values from configuration
+      drive_forward_s_ = msg->dig_time / 10.0;  // Convert from tenths to seconds
+      dump_travel_time_s_ = msg->travel_time / 10.0;  // Convert from tenths to seconds
+      RCLCPP_INFO(this->get_logger(), "Updated timing: drive_forward=%f, dump_travel=%f", 
+        drive_forward_s_, dump_travel_time_s_);
+      publishStatus("CONFIG", "Updated digging sequence timing");
+    }
+    else if (msg->command == "START_DIG" && !is_sequence_running_)
     {
       RCLCPP_INFO(this->get_logger(), "Starting digging sequence");
       is_sequence_running_ = true;
@@ -199,7 +212,7 @@ private:
         break;
 
       case 1: // Drive forward with dig belt on
-        if (elapsed < DRIVE_FORWARD_S)
+        if (elapsed < drive_forward_s_)  // Use configured value
         {
           // Keep dig belt on
           bool dump_belt_on = fmod(elapsed, DUMP_ROTATE_EVERY_S) < DUMP_ROTATE_PERIOD_S;
@@ -290,6 +303,8 @@ private:
   rclcpp::Time step_start_time_;
   json control_msg_;
   json prev_control_msg_;  // Track previous state for change detection
+  double drive_forward_s_;  // Configurable drive forward time
+  double dump_travel_time_s_;  // Configurable dump travel time
 };
 
 int main(int argc, char * argv[])
