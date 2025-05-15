@@ -89,22 +89,13 @@ def generate_launch_description():
         )
     )
 
-    # Launch the mission control node
-    mission_control_node = Node(
-        package='moonpie_osamu',
-        executable='mission_control',
-        name='mission_control',
-        output='screen'
+    # Launch the mission control launch file
+    mission_control_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg_share, 'launch', 'mission_control.launch.py')
+        )
     )
     
-    # Add the mission control panel node
-    mission_control_panel_node = Node(
-        package='moonpie_osamu',
-        executable='mission_control_panel',
-        name='mission_control_panel',
-        output='screen'
-    )
-
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -119,7 +110,6 @@ def generate_launch_description():
     ld.add_action(slam_launch)
     ld.add_action(nav_launch)
     ld.add_action(aruco_launch)
-    ld.add_action(mission_control_node)
-    ld.add_action(mission_control_panel_node)
+    ld.add_action(mission_control_launch)
 
     return ld 

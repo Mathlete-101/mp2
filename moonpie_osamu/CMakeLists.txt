@@ -150,23 +150,31 @@ install(TARGETS
 
 # Add digging_sequence_node executable
 add_executable(digging_sequence_node src/digging_sequence_node.cpp)
-ament_target_dependencies(digging_sequence_node
-  rclcpp
-  std_msgs
-  geometry_msgs
+add_dependencies(digging_sequence_node ${PROJECT_NAME}__rosidl_typesupport_cpp)
+target_include_directories(digging_sequence_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cpp>
+  $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(digging_sequence_node
   ${rclcpp_LIBRARIES}
   ${std_msgs_LIBRARIES}
   ${geometry_msgs_LIBRARIES}
+  ${PROJECT_NAME}__rosidl_typesupport_cpp
 )
+install(TARGETS digging_sequence_node DESTINATION lib/${PROJECT_NAME})
 
 # Install all targets
 install(TARGETS
   mission_control_panel
-  mission_control_node
   digging_sequence_node
   DESTINATION lib/${PROJECT_NAME}
+)
+
+ament_target_dependencies(digging_sequence_node
+  rclcpp
+  std_msgs
+  geometry_msgs
 )
 
 ament_package() 

@@ -7,11 +7,14 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
 #include <moonpie_osamu/msg/behavior_status.hpp>
 #include <moonpie_osamu/msg/mission_command.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 
 namespace moonpie_osamu
 {
@@ -35,26 +38,47 @@ public:
 private slots:
   void onStartMission();
   void onStopMission();
+  void onStartDiggingSequence();
+  void onStopDiggingSequence();
+  void sendTestCommand();
 
 private:
   void setStatusLabel(ConnectionStatus status);
   void updateConnectionStatus(ConnectionStatus status);
-  void sendTestCommand();
+  void appendLog(const QString& message);
   void onBehaviorStatus(const moonpie_osamu::msg::BehaviorStatus::SharedPtr msg);
   void onCameraImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg);
-  void appendLog(const QString& message);
+  void onArduinoControl(const std_msgs::msg::String::SharedPtr msg);
+  void onCmdVel(const geometry_msgs::msg::Twist::SharedPtr msg);
 
   std::shared_ptr<rclcpp::Node> node_;
+  ConnectionStatus connection_status_;
+
+  // UI Elements
+  QLabel* cameraView;
+  QTextEdit* statusDisplay;
+  QTextEdit* logDisplay;
+  QPushButton* startDiggingBtn;
+  QPushButton* stopDiggingBtn;
+
+  // Arduino control status labels
+  QLabel* cmdStatusLabel;
+  QLabel* digBeltLabel;
+  QLabel* dumpBeltLabel;
+  QLabel* actuatorExtendLabel;
+  QLabel* actuatorRetractLabel;
+  QLabel* dpadXLabel;
+  QLabel* dpadYLabel;
+  QLabel* kpLabel;
+  QLabel* kiLabel;
+  QLabel* linearXLabel;
+  QLabel* angularZLabel;
+
   rclcpp::Publisher<moonpie_osamu::msg::MissionCommand>::SharedPtr cmd_pub_;
   rclcpp::Subscription<moonpie_osamu::msg::BehaviorStatus>::SharedPtr behavior_status_sub_;
   rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr camera_sub_;
-
-  QPushButton * start_button_;
-  QPushButton * stop_button_;
-  QLabel * status_label_;
-  QLabel * camera_display_;
-  QTextEdit * log_display_;
-  ConnectionStatus connection_status_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr arduino_control_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 };
 
 }  // namespace moonpie_osamu

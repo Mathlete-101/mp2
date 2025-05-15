@@ -10,6 +10,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 import json
+from moonpie_osamu.msg import BehaviorStatus, MissionCommand
 
 # timing for automated digging sequence
 # The actuator will extend with the dig belt on for time
@@ -46,7 +47,14 @@ class ArduinoControl(Node):
             self.joy,
             10
         )
+        self.mission_cmd_subscription = self.create_subscription(
+            MissionCommand,
+            'mission/cmd',
+            self.mission_cmd_callback,
+            10
+        )
         self.arduino_command_publisher = self.create_publisher(String, 'arduino_command', 10)
+        self.status_pub = self.create_publisher(BehaviorStatus, 'behavior_status', 10)
         
         # Split message into velocity and control components
         self.velocity_message = {
@@ -69,6 +77,9 @@ class ArduinoControl(Node):
         # Track if control values have changed
         self.control_changed = False
         
+        # Manual control state
+        self.manual_control_enabled = True
+        
         self.get_logger().info('Arduino Control Node has started')
 
         # Set up separate timers for velocity and control messages
@@ -80,7 +91,37 @@ class ArduinoControl(Node):
         self.dump_belt_last_time = 0.0
         self.dump_belt_on_period = False
 
+    def mission_cmd_callback(self, msg):
+        if msg.command == "START_DIG":
+            self.manual_control_enabled = False
+            self.get_logger().info("Manual control disabled for digging sequence")
+            self.publish_status("MANUAL_DISABLED", "Manual control disabled for digging sequence")
+        elif msg.command == "STOP_DIG":
+            self.manual_control_enabled = True
+            self.get_logger().info("Manual control re-enabled")
+            self.publish_status("MANUAL_ENABLED", "Manual control re-enabled")
+        elif msg.command == "DISABLE_MANUAL":
+            self.manual_control_enabled = False
+            self.get_logger().info("Manual control disabled")
+            self.publish_status("MANUAL_DISABLED", "Manual control disabled")
+        elif msg.command == "ENABLE_MANUAL":
+            self.manual_control_enabled = True
+            self.get_logger().info("Manual control enabled")
+            self.publish_status("MANUAL_ENABLED", "Manual control enabled")
+
+    def publish_status(self, status, details):
+        """Publish status to mission log"""
+        msg = BehaviorStatus()
+        msg.timestamp = self.get_clock().now().to_msg()
+        msg.current_node = "arduino_control"
+        msg.status = status
+        msg.details = details
+        self.status_pub.publish(msg)
+
     def joy(self, msg):
+        if not self.manual_control_enabled:
+            return
+
         # Update control message and mark as changed
         self.control_message.update({
             "dump_belt": msg.buttons[1],
@@ -99,6 +140,9 @@ class ArduinoControl(Node):
             self.kill_autonomous()
 
     def cmd_vel(self, msg):
+        if not self.manual_control_enabled:
+            return
+
         # Update velocity message
         self.velocity_message.update({
             "linearx_mps": msg.linear.x * 0.5,
@@ -106,12 +150,20 @@ class ArduinoControl(Node):
         })
 
     def write_velocity_message(self):
+        if not self.manual_control_enabled and not self.autonomous_active:
+            return
+
+        # Always send velocity messages when manual control is enabled or autonomy is active
         cmd = json.dumps(self.velocity_message)
         msg = String()
         msg.data = cmd
         self.arduino_command_publisher.publish(msg)
 
     def write_control_message(self):
+        if not self.manual_control_enabled and not self.autonomous_active:
+            return
+
+        # Only send control messages when values change or autonomy is active
         if self.control_changed or self.autonomous_active:
             cmd = json.dumps(self.control_message)
             msg = String()
@@ -122,19 +174,20 @@ class ArduinoControl(Node):
     def start_autonomous(self):
         self.get_logger().info("Autonomous process started")
         self.autonomous_active = True
+        self.manual_control_enabled = False
         self.autonomous_start_time = time.time()
         self.control_message["actuator_extend"] = True
         self.control_message["dig_belt"] = 1
-        self.dump_belt_last_time = time.time() 
+        self.dump_belt_last_time = time.time()
+        self.control_changed = True
 
     def kill_autonomous(self):
         self.get_logger().info("Autonomous process killed")
         self.autonomous_active = False
+        self.manual_control_enabled = True
         self.control_message["actuator_extend"] = False
         self.control_message["dig_belt"] = 0
-        self.velocity_message["linearx_mps"] = 0.0
-        self.control_message["dump_belt"] = 0
-        self.control_message["actuator_retract"] = False
+        self.control_changed = True
 
     def run_autonomous(self):
         current_time = time.time()
@@ -163,6 +216,7 @@ class ArduinoControl(Node):
             self.control_message["actuator_retract"] = False
             self.control_message["dig_belt"] = 0
             self.autonomous_active = False
+            self.manual_control_enabled = True
             self.get_logger().info("Autonomous process finished")
 
 

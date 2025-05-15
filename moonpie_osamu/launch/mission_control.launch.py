@@ -43,6 +43,18 @@ def generate_launch_description():
         }]
     )
 
+    # Launch the digging sequence node
+    digging_sequence_node = Node(
+        package='moonpie_osamu',
+        executable='digging_sequence_node',
+        name='digging_sequence',
+        output='screen',
+        parameters=[{
+            'use_sim_time': use_sim_time,
+        }]
+    )
+
     ld.add_action(mission_control_node)
+    ld.add_action(digging_sequence_node)
 
     return ld 
