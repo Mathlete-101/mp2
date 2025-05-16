@@ -71,6 +71,11 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   QVBoxLayout* diggingLayout = new QVBoxLayout(diggingGroup);
   diggingLayout->setSpacing(5);
 
+  // Create digging status display
+  diggingStatusLabel = new QLabel("Status: Idle", this);
+  diggingStatusLabel->setStyleSheet("QLabel { font-weight: bold; padding: 5px; background-color: #e0e0e0; border-radius: 3px; }");
+  diggingLayout->addWidget(diggingStatusLabel);
+
   // Create digging control buttons
   startDiggingBtn = new QPushButton("Start Digging", this);
   stopDiggingBtn = new QPushButton("Stop Digging", this);
@@ -306,6 +311,27 @@ void MissionControlPanel::onBehaviorStatus(const moonpie_osamu::msg::BehaviorSta
       updateConnectionStatus(ConnectionStatus::RUNNING);
     } else if (msg->status == "READY" || msg->status == "IDLE") {
       updateConnectionStatus(ConnectionStatus::READY);
+    }
+  }
+
+  // Update the log display with the new status
+  QString logText = QString::fromStdString(msg->status);
+  logDisplay->append(logText);
+
+  // Update digging status if it's a digging-related message
+  if (msg->current_node == "digging_sequence") {
+    QString statusText = QString::fromStdString(msg->details);
+    diggingStatusLabel->setText("Status: " + statusText);
+    
+    // Update status label color based on the message
+    if (statusText.contains("Starting", Qt::CaseInsensitive)) {
+      diggingStatusLabel->setStyleSheet("QLabel { font-weight: bold; padding: 5px; background-color: #4CAF50; color: white; border-radius: 3px; }");
+    } else if (statusText.contains("Stopping", Qt::CaseInsensitive)) {
+      diggingStatusLabel->setStyleSheet("QLabel { font-weight: bold; padding: 5px; background-color: #f44336; color: white; border-radius: 3px; }");
+    } else if (statusText.contains("Complete", Qt::CaseInsensitive)) {
+      diggingStatusLabel->setStyleSheet("QLabel { font-weight: bold; padding: 5px; background-color: #2196F3; color: white; border-radius: 3px; }");
+    } else {
+      diggingStatusLabel->setStyleSheet("QLabel { font-weight: bold; padding: 5px; background-color: #FF9800; color: white; border-radius: 3px; }");
     }
   }
 }

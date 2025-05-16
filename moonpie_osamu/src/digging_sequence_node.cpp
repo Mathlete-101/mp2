@@ -13,19 +13,28 @@
 using namespace std::chrono_literals;
 using json = nlohmann::json;
 
-// Timing constants from arduino_control.py
+// Timing constants
 constexpr double ACTUATOR_EXTEND_S = 6.7;
-constexpr double DRIVE_FORWARD_S_DEFAULT = 20.0;  // Default value
-constexpr double DUMP_ROTATE_EVERY_S = 10.0;
-constexpr double DUMP_ROTATE_PERIOD_S = 1.0;
+constexpr double DRIVE_FORWARD_S_DEFAULT = 20.0;
 constexpr double ACTUATOR_RETRACT_S = 4.0;
 constexpr double DRIVE_AND_DIG_SPEED_MPS = 0.075;
-constexpr double BACKWARD_TRAVEL_SPEED_MPS = 0.2;  // Speed for backward travel
-constexpr double DUMP_BELT_DURATION_S = 5.0;  // Duration to run dump belt
+constexpr double BACKWARD_TRAVEL_SPEED_MPS = 0.2;
+constexpr double DUMP_BELT_DURATION_S = 5.0;
 
 // PID constants
 constexpr double Kp = 4.0;
 constexpr double Ki = 0.2;
+
+// State definitions
+enum class DigState {
+  IDLE,
+  EXTENDING_ACTUATOR,
+  DRIVING_FORWARD,
+  RETRACTING_ACTUATOR,
+  DRIVING_BACKWARD,
+  RUNNING_DUMP_BELT,
+  COMPLETE
+};
 
 class DiggingSequenceNode : public rclcpp::Node
 {
@@ -47,28 +56,15 @@ public:
     sequence_timer_ = this->create_wall_timer(
       100ms, std::bind(&DiggingSequenceNode::sequence_timer_callback, this));
 
-    // Initialize control message
-    control_msg_ = {
-      {"cmd", true},
-      {"dump_belt", 0},
-      {"dig_belt", 0},
-      {"actuator_extend", false},
-      {"actuator_retract", false},
-      {"dpad", {{"x", 0}, {"y", 0}}},
-      {"Kp", Kp},
-      {"Ki", Ki}
-    };
-
-    // Initialize previous state
-    prev_control_msg_ = control_msg_;
-
     // Initialize timing values
     drive_forward_s_ = DRIVE_FORWARD_S_DEFAULT;
-    dump_travel_time_s_ = 3.0;  // Initialize to 3.0 seconds
+    dump_travel_time_s_ = 3.0;
 
-    // Publish initial status
+    // Initialize state
+    current_state_ = DigState::IDLE;
+    state_start_time_ = this->now();
+
     publishStatus("IDLE", "Digging sequence node initialized");
-
     RCLCPP_INFO(this->get_logger(), "Digging sequence node initialized");
   }
 
@@ -77,286 +73,234 @@ private:
   {
     if (msg->command == "CONFIG")
     {
-      // Update timing values from configuration
-      drive_forward_s_ = msg->dig_time / 10.0;  // Convert from tenths to seconds
-      dump_travel_time_s_ = msg->travel_time / 10.0;  // Convert from tenths to seconds
+      drive_forward_s_ = msg->dig_time / 10.0;
+      dump_travel_time_s_ = msg->travel_time / 10.0;
       RCLCPP_INFO(this->get_logger(), "Updated timing: drive_forward=%f, dump_travel=%f", 
         drive_forward_s_, dump_travel_time_s_);
       publishStatus("CONFIG", "Updated digging sequence timing");
     }
-    else if ((msg->command == "START_DIG" || msg->command == "START_DIG_AND_DUMP") && !is_sequence_running_)
+    else if ((msg->command == "START_DIG" || msg->command == "START_DIG_AND_DUMP") && current_state_ == DigState::IDLE)
     {
       RCLCPP_INFO(this->get_logger(), "Starting digging sequence");
-      is_sequence_running_ = true;
-      current_step_ = 0;
-      step_start_time_ = this->now();
-      // Reset control message to initial state
-      control_msg_ = {
-        {"cmd", true},
-        {"dump_belt", 0},
-        {"dig_belt", 0},
-        {"actuator_extend", false},
-        {"actuator_retract", false},
-        {"dpad", {{"x", 0}, {"y", 0}}},
-        {"Kp", Kp},
-        {"Ki", Ki}
-      };
-      prev_control_msg_ = control_msg_;
-      publishStatus("DIGGING", "Starting digging sequence");
-
-      // Store whether this is a dig+dump sequence
       is_dig_and_dump_ = (msg->command == "START_DIG_AND_DUMP");
+      transitionToState(DigState::EXTENDING_ACTUATOR);
 
       // Send disable manual control command
       auto disable_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
       disable_msg->command = "DISABLE_MANUAL";
       cmd_pub_->publish(std::move(disable_msg));
     }
-    else if (msg->command == "STOP_DIG" && is_sequence_running_)
+    else if (msg->command == "STOP_DIG" && current_state_ != DigState::IDLE)
     {
       RCLCPP_INFO(this->get_logger(), "Stopping digging sequence");
-      is_sequence_running_ = false;
-      // Stop all actuators and movement
-      control_msg_["dig_belt"] = 0;
-      control_msg_["dump_belt"] = 0;
-      control_msg_["actuator_extend"] = false;
-      control_msg_["actuator_retract"] = false;
-      sendControlMessage();
-      // Stop the robot
-      auto twist_msg = geometry_msgs::msg::Twist();
-      cmd_vel_pub_->publish(twist_msg);
+      stopSequence();
+    }
+  }
+
+  void transitionToState(DigState new_state)
+  {
+    current_state_ = new_state;
+    state_start_time_ = this->now();
+    
+    // Send appropriate control message for the new state
+    switch (current_state_)
+    {
+      case DigState::EXTENDING_ACTUATOR:
+        sendControlMessage({
+          {"cmd", true},
+          {"dump_belt", 0},
+          {"dig_belt", 1},
+          {"actuator_extend", true},
+          {"actuator_retract", false},
+          {"dpad", {{"x", 0}, {"y", 0}}},
+          {"linearx_mps", 0.0},
+          {"angularz_rps", 0.0},
+          {"Kp", Kp},
+          {"Ki", Ki}
+        });
+        break;
+
+      case DigState::DRIVING_FORWARD:
+        sendControlMessage({
+          {"cmd", true},
+          {"dump_belt", 0},
+          {"dig_belt", 1},
+          {"actuator_extend", false},
+          {"actuator_retract", false},
+          {"dpad", {{"x", 0}, {"y", 0}}},
+          {"linearx_mps", DRIVE_AND_DIG_SPEED_MPS},
+          {"angularz_rps", 0.0},
+          {"Kp", Kp},
+          {"Ki", Ki}
+        });
+        break;
+
+      case DigState::RETRACTING_ACTUATOR:
+        sendControlMessage({
+          {"cmd", true},
+          {"dump_belt", 0},
+          {"dig_belt", 1},
+          {"actuator_extend", false},
+          {"actuator_retract", true},
+          {"dpad", {{"x", 0}, {"y", 0}}},
+          {"linearx_mps", 0.0},
+          {"angularz_rps", 0.0},
+          {"Kp", Kp},
+          {"Ki", Ki}
+        });
+        break;
+
+      case DigState::DRIVING_BACKWARD:
+        sendControlMessage({
+          {"cmd", true},
+          {"dump_belt", 0},
+          {"dig_belt", 0},
+          {"actuator_extend", false},
+          {"actuator_retract", false},
+          {"dpad", {{"x", 0}, {"y", 0}}},
+          {"linearx_mps", -BACKWARD_TRAVEL_SPEED_MPS},
+          {"angularz_rps", 0.0},
+          {"Kp", Kp},
+          {"Ki", Ki}
+        });
+        break;
+
+      case DigState::RUNNING_DUMP_BELT:
+        sendControlMessage({
+          {"cmd", true},
+          {"dump_belt", 1},
+          {"dig_belt", 0},
+          {"actuator_extend", false},
+          {"actuator_retract", false},
+          {"dpad", {{"x", 0}, {"y", 0}}},
+          {"linearx_mps", 0.0},
+          {"angularz_rps", 0.0},
+          {"Kp", Kp},
+          {"Ki", Ki}
+        });
+        break;
+
+      case DigState::COMPLETE:
+      case DigState::IDLE:
+        sendControlMessage({
+          {"cmd", true},
+          {"dump_belt", 0},
+          {"dig_belt", 0},
+          {"actuator_extend", false},
+          {"actuator_retract", false},
+          {"dpad", {{"x", 0}, {"y", 0}}},
+          {"linearx_mps", 0.0},
+          {"angularz_rps", 0.0},
+          {"Kp", Kp},
+          {"Ki", Ki}
+        });
+        break;
+    }
+
+    // Publish state change with appropriate status
+    if (current_state_ == DigState::IDLE) {
       publishStatus("IDLE", "Digging sequence stopped by user");
-
-      // Send enable manual control command
-      auto enable_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-      enable_msg->command = "ENABLE_MANUAL";
-      cmd_pub_->publish(std::move(enable_msg));
+    } else if (current_state_ == DigState::COMPLETE) {
+      publishStatus("IDLE", "Digging sequence stopped by user");
+    } else {
+      publishStatus("DIGGING", getStateDescription());
     }
   }
 
-  void sendControlMessage()
+  void stopSequence()
   {
-    // Only send messages if we're running a sequence
-    if (!is_sequence_running_) {
-      return;
-    }
-
-    // Check if any values have changed
-    bool has_changes = false;
-    
-    // Check simple values
-    if (control_msg_["cmd"] != prev_control_msg_["cmd"] ||
-        control_msg_["dump_belt"] != prev_control_msg_["dump_belt"] ||
-        control_msg_["dig_belt"] != prev_control_msg_["dig_belt"] ||
-        control_msg_["actuator_extend"] != prev_control_msg_["actuator_extend"] ||
-        control_msg_["actuator_retract"] != prev_control_msg_["actuator_retract"] ||
-        control_msg_["Kp"] != prev_control_msg_["Kp"] ||
-        control_msg_["Ki"] != prev_control_msg_["Ki"]) {
-      has_changes = true;
-    }
-    
-    // Check dpad values
-    if (control_msg_["dpad"]["x"] != prev_control_msg_["dpad"]["x"] ||
-        control_msg_["dpad"]["y"] != prev_control_msg_["dpad"]["y"]) {
-      has_changes = true;
-    }
-
-    // Only send message if there are changes
-    if (has_changes) {
-      auto msg = std_msgs::msg::String();
-      msg.data = control_msg_.dump();
-      arduino_command_pub_->publish(msg);
-      
-      // Update previous state
-      prev_control_msg_ = control_msg_;
-    }
+    transitionToState(DigState::IDLE);
   }
 
-  void publishStatus(const std::string& status, const std::string& details)
+  void sendControlMessage(const json& msg)
   {
-    auto status_msg = moonpie_osamu::msg::BehaviorStatus();
-    status_msg.timestamp = this->now();
-    status_msg.current_node = "digging_sequence";
-    status_msg.status = status;
-    status_msg.details = details;
-    status_pub_->publish(status_msg);
+    auto string_msg = std_msgs::msg::String();
+    string_msg.data = msg.dump();
+    arduino_command_pub_->publish(string_msg);
+  }
+
+  void publishStatus(const std::string& behavior, const std::string& status)
+  {
+    auto msg = std::make_unique<moonpie_osamu::msg::BehaviorStatus>();
+    msg->current_node = "digging_sequence";
+    msg->status = behavior;
+    msg->details = status;
+    status_pub_->publish(std::move(msg));
+  }
+
+  std::string getStateDescription()
+  {
+    switch (current_state_) {
+      case DigState::IDLE:
+        return "Idle";
+      case DigState::EXTENDING_ACTUATOR:
+        return "Extending Actuator";
+      case DigState::DRIVING_FORWARD:
+        return "Driving Forward";
+      case DigState::RETRACTING_ACTUATOR:
+        return "Retracting Actuator";
+      case DigState::DRIVING_BACKWARD:
+        return "Driving Backward";
+      case DigState::RUNNING_DUMP_BELT:
+        return "Running Dump Belt";
+      case DigState::COMPLETE:
+        return "Complete";
+      default:
+        return "Unknown State";
+    }
   }
 
   void sequence_timer_callback()
   {
-    if (!is_sequence_running_)
-    {
+    if (current_state_ == DigState::IDLE) {
       return;
     }
 
     auto current_time = this->now();
-    auto elapsed = (current_time - step_start_time_).seconds();
+    auto elapsed = (current_time - state_start_time_).seconds();
 
-    switch (current_step_)
+    // Check if current state should transition
+    switch (current_state_)
     {
-      case 0: // Extend actuator with dig belt on
-        if (elapsed < ACTUATOR_EXTEND_S)
-        {
-          // Only update and send if values are different
-          if (!control_msg_["actuator_extend"] || control_msg_["dig_belt"] != 1 || control_msg_["dump_belt"] != 0)
-          {
-            control_msg_["actuator_extend"] = true;
-            control_msg_["dig_belt"] = 1;
-            control_msg_["dump_belt"] = 0;
-            sendControlMessage();
-          }
-          // Stop the robot
-          auto twist_msg = geometry_msgs::msg::Twist();
-          cmd_vel_pub_->publish(twist_msg);
-        }
-        else
-        {
-          current_step_++;
-          step_start_time_ = current_time;
+      case DigState::EXTENDING_ACTUATOR:
+        if (elapsed >= ACTUATOR_EXTEND_S) {
+          transitionToState(DigState::DRIVING_FORWARD);
         }
         break;
 
-      case 1: // Drive forward with dig belt on
-        if (elapsed < drive_forward_s_)  // Use configured value
-        {
-          // Keep dig belt on
-          bool dump_belt_on = fmod(elapsed, DUMP_ROTATE_EVERY_S) < DUMP_ROTATE_PERIOD_S;
-          
-          // Only update and send if values are different
-          if (control_msg_["dig_belt"] != 1 || 
-              control_msg_["actuator_extend"] || 
-              control_msg_["dump_belt"] != (dump_belt_on ? 1 : 0))
-          {
-            control_msg_["dig_belt"] = 1;
-            control_msg_["actuator_extend"] = false;
-            control_msg_["dump_belt"] = dump_belt_on ? 1 : 0;
-            sendControlMessage();
-          }
-          // Drive forward
-          auto twist_msg = geometry_msgs::msg::Twist();
-          twist_msg.linear.x = DRIVE_AND_DIG_SPEED_MPS;
-          cmd_vel_pub_->publish(twist_msg);
-        }
-        else
-        {
-          // Stop driving
-          auto twist_msg = geometry_msgs::msg::Twist();
-          cmd_vel_pub_->publish(twist_msg);
-          current_step_++;
-          step_start_time_ = current_time;
+      case DigState::DRIVING_FORWARD:
+        if (elapsed >= drive_forward_s_) {
+          transitionToState(DigState::RETRACTING_ACTUATOR);
         }
         break;
 
-      case 2: // Retract actuator with dig belt on
-        if (elapsed < ACTUATOR_RETRACT_S)
-        {
-          // Only update and send if values are different
-          if (control_msg_["dig_belt"] != 1 || 
-              !control_msg_["actuator_retract"] || 
-              control_msg_["dump_belt"] != 0)
-          {
-            control_msg_["dig_belt"] = 1;
-            control_msg_["actuator_retract"] = true;
-            control_msg_["dump_belt"] = 0;
-            sendControlMessage();
-          }
-          // Stop the robot
-          auto twist_msg = geometry_msgs::msg::Twist();
-          cmd_vel_pub_->publish(twist_msg);
-        }
-        else
-        {
-          if (is_dig_and_dump_)
-          {
-            // Move to backward travel step
-            current_step_++;
-            step_start_time_ = current_time;
-          }
-          else
-          {
-            // Stop everything
-            if (control_msg_["dig_belt"] != 0 || 
-                control_msg_["actuator_retract"] || 
-                control_msg_["dump_belt"] != 0)
-            {
-              control_msg_["dig_belt"] = 0;
-              control_msg_["actuator_retract"] = false;
-              control_msg_["dump_belt"] = 0;
-              sendControlMessage();
-            }
-            
-            // Stop the robot
-            auto twist_msg = geometry_msgs::msg::Twist();
-            cmd_vel_pub_->publish(twist_msg);
-            
-            // Sequence complete
-            is_sequence_running_ = false;
-            publishStatus("IDLE", "Digging sequence completed");
-            RCLCPP_INFO(this->get_logger(), "Digging sequence completed");
-
-            // Send enable manual control command
-            auto enable_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-            enable_msg->command = "ENABLE_MANUAL";
-            cmd_pub_->publish(std::move(enable_msg));
+      case DigState::RETRACTING_ACTUATOR:
+        if (elapsed >= ACTUATOR_RETRACT_S) {
+          if (is_dig_and_dump_) {
+            transitionToState(DigState::DRIVING_BACKWARD);
+          } else {
+            transitionToState(DigState::COMPLETE);
           }
         }
         break;
 
-      case 3: // Backward travel (only in dig+dump sequence)
-        if (elapsed < dump_travel_time_s_)
-        {
-          // Drive backward
-          auto twist_msg = geometry_msgs::msg::Twist();
-          twist_msg.linear.x = -BACKWARD_TRAVEL_SPEED_MPS;
-          cmd_vel_pub_->publish(twist_msg);
-        }
-        else
-        {
-          // Stop driving
-          auto twist_msg = geometry_msgs::msg::Twist();
-          cmd_vel_pub_->publish(twist_msg);
-          current_step_++;
-          step_start_time_ = current_time;
+      case DigState::DRIVING_BACKWARD:
+        if (elapsed >= dump_travel_time_s_) {
+          transitionToState(DigState::RUNNING_DUMP_BELT);
         }
         break;
 
-      case 4: // Dump belt activation (only in dig+dump sequence)
-        if (elapsed < DUMP_BELT_DURATION_S)
-        {
-          // Only update and send if values are different
-          if (control_msg_["dump_belt"] != 1)
-          {
-            control_msg_["dump_belt"] = 1;
-            sendControlMessage();
-          }
+      case DigState::RUNNING_DUMP_BELT:
+        if (elapsed >= DUMP_BELT_DURATION_S) {
+          transitionToState(DigState::COMPLETE);
         }
-        else
-        {
-          // Stop everything
-          if (control_msg_["dig_belt"] != 0 || 
-              control_msg_["actuator_retract"] || 
-              control_msg_["dump_belt"] != 0)
-          {
-            control_msg_["dig_belt"] = 0;
-            control_msg_["actuator_retract"] = false;
-            control_msg_["dump_belt"] = 0;
-            sendControlMessage();
-          }
-          
-          // Stop the robot
-          auto twist_msg = geometry_msgs::msg::Twist();
-          cmd_vel_pub_->publish(twist_msg);
-          
-          // Sequence complete
-          is_sequence_running_ = false;
-          publishStatus("IDLE", "Dig and dump sequence completed");
-          RCLCPP_INFO(this->get_logger(), "Dig and dump sequence completed");
+        break;
 
-          // Send enable manual control command
-          auto enable_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-          enable_msg->command = "ENABLE_MANUAL";
-          cmd_pub_->publish(std::move(enable_msg));
-        }
+      case DigState::COMPLETE:
+        stopSequence();
+        break;
+
+      default:
         break;
     }
   }
@@ -368,14 +312,11 @@ private:
   rclcpp::Subscription<moonpie_osamu::msg::MissionCommand>::SharedPtr dig_command_sub_;
   rclcpp::TimerBase::SharedPtr sequence_timer_;
 
-  bool is_sequence_running_ = false;
-  int current_step_ = 0;
-  rclcpp::Time step_start_time_;
-  json control_msg_;
-  json prev_control_msg_;  // Track previous state for change detection
-  double drive_forward_s_;  // Configurable drive forward time
-  double dump_travel_time_s_;  // Configurable dump travel time
-  bool is_dig_and_dump_ = false;  // Whether this is a dig+dump sequence
+  DigState current_state_;
+  rclcpp::Time state_start_time_;
+  double drive_forward_s_;
+  double dump_travel_time_s_;
+  bool is_dig_and_dump_ = false;
 };
 
 int main(int argc, char * argv[])
