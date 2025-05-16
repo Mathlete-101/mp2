@@ -18,6 +18,8 @@ constexpr double ACTUATOR_EXTEND_S = 6.7;
 constexpr double DRIVE_FORWARD_S_DEFAULT = 20.0;
 constexpr double ACTUATOR_RETRACT_S = 4.0;
 constexpr double DUMP_BELT_DURATION_S = 5.0;
+constexpr double PERIODIC_DUMP_INTERVAL_S = 5.0;  // Run dump belt every 5 seconds
+constexpr double PERIODIC_DUMP_DURATION_S = 1.0;  // Run dump belt for 1 second
 
 // Drive speed constants (default values)
 constexpr double DRIVE_AND_DIG_SPEED_MPS_DEFAULT = 0.075;
@@ -69,6 +71,8 @@ public:
     // Initialize state
     current_state_ = DigState::IDLE;
     state_start_time_ = this->now();
+    last_periodic_dump_time_ = this->now();
+    is_periodic_dumping_ = false;
 
     publishStatus("IDLE", "Digging sequence node initialized");
     RCLCPP_INFO(this->get_logger(), "Digging sequence node initialized");
@@ -145,6 +149,8 @@ private:
           {"Kp", Kp},
           {"Ki", Ki}
         });
+        last_periodic_dump_time_ = this->now();
+        is_periodic_dumping_ = false;
         break;
 
       case DigState::RETRACTING_ACTUATOR:
@@ -175,6 +181,8 @@ private:
           {"Kp", Kp},
           {"Ki", Ki}
         });
+        last_periodic_dump_time_ = this->now();
+        is_periodic_dumping_ = false;
         break;
 
       case DigState::RUNNING_DUMP_BELT:
@@ -271,6 +279,44 @@ private:
     auto current_time = this->now();
     auto elapsed = (current_time - state_start_time_).seconds();
 
+    // Handle periodic dump belt operation during driving states
+    if (current_state_ == DigState::DRIVING_FORWARD || current_state_ == DigState::DRIVING_BACKWARD) {
+      auto time_since_last_dump = (current_time - last_periodic_dump_time_).seconds();
+      
+      if (!is_periodic_dumping_ && time_since_last_dump >= PERIODIC_DUMP_INTERVAL_S) {
+        // Start periodic dump
+        is_periodic_dumping_ = true;
+        last_periodic_dump_time_ = current_time;
+        sendControlMessage({
+          {"cmd", true},
+          {"dump_belt", 1},
+          {"dig_belt", current_state_ == DigState::DRIVING_FORWARD ? 1 : 0},
+          {"actuator_extend", false},
+          {"actuator_retract", false},
+          {"dpad", {{"x", 0}, {"y", 0}}},
+          {"linearx_mps", current_state_ == DigState::DRIVING_FORWARD ? drive_and_dig_speed_mps_ : -backward_travel_speed_mps_},
+          {"angularz_rps", 0.0},
+          {"Kp", Kp},
+          {"Ki", Ki}
+        });
+      } else if (is_periodic_dumping_ && time_since_last_dump >= PERIODIC_DUMP_DURATION_S) {
+        // Stop periodic dump
+        is_periodic_dumping_ = false;
+        sendControlMessage({
+          {"cmd", true},
+          {"dump_belt", 0},
+          {"dig_belt", current_state_ == DigState::DRIVING_FORWARD ? 1 : 0},
+          {"actuator_extend", false},
+          {"actuator_retract", false},
+          {"dpad", {{"x", 0}, {"y", 0}}},
+          {"linearx_mps", current_state_ == DigState::DRIVING_FORWARD ? drive_and_dig_speed_mps_ : -backward_travel_speed_mps_},
+          {"angularz_rps", 0.0},
+          {"Kp", Kp},
+          {"Ki", Ki}
+        });
+      }
+    }
+
     // Check if current state should transition
     switch (current_state_)
     {
@@ -326,6 +372,8 @@ private:
 
   DigState current_state_;
   rclcpp::Time state_start_time_;
+  rclcpp::Time last_periodic_dump_time_;
+  bool is_periodic_dumping_;
   double drive_forward_s_;
   double dump_travel_time_s_;
   double drive_and_dig_speed_mps_;
