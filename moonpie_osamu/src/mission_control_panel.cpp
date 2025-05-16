@@ -13,6 +13,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <geometry_msgs/msg/twist.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 
 namespace moonpie_osamu
 {
@@ -255,6 +256,11 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   arduino_control_sub_ = node_->create_subscription<std_msgs::msg::String>(
     "arduino_command", 10,
     std::bind(&MissionControlPanel::onArduinoControl, this, std::placeholders::_1));
+
+  // Create subscriber for Xbox controller (joy topic)
+  joy_sub_ = node_->create_subscription<sensor_msgs::msg::Joy>(
+    "joy", 10,
+    std::bind(&MissionControlPanel::onJoy, this, std::placeholders::_1));
 
   // Send initial test command
   QTimer::singleShot(1000, this, &MissionControlPanel::sendTestCommand);
@@ -538,6 +544,22 @@ void MissionControlPanel::sendTestCommand()
   msg->command = "TEST";
   cmd_pub_->publish(std::move(msg));
   appendLog("Sent test command to mission control node...");
+}
+
+void MissionControlPanel::onJoy(const sensor_msgs::msg::Joy::SharedPtr msg)
+{
+  // Left bumper is usually button 4 on Xbox controllers
+  bool left_bumper_pressed = (msg->buttons.size() > 4) ? (msg->buttons[4] == 1) : false;
+  if (left_bumper_pressed && !prev_left_bumper_pressed_)
+  {
+    // Trigger dig and dump sequence
+    auto cmd_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+    cmd_msg->command = "START_DIG_AND_DUMP";
+    cmd_pub_->publish(std::move(cmd_msg));
+    appendLog("[JOY] Left bumper pressed: Sent start dig and dump sequence command");
+    updateConnectionStatus(ConnectionStatus::RUNNING);
+  }
+  prev_left_bumper_pressed_ = left_bumper_pressed;
 }
 
 std::shared_ptr<rclcpp::Node> MissionControlPanel::getNode()

@@ -16,6 +16,7 @@
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <geometry_msgs/msg/twist.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 
 namespace moonpie_osamu
 {
@@ -53,6 +54,7 @@ private:
   void onCameraImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg);
   void onArduinoControl(const std_msgs::msg::String::SharedPtr msg);
   void onCmdVel(const geometry_msgs::msg::Twist::SharedPtr msg);
+  void onJoy(const sensor_msgs::msg::Joy::SharedPtr msg);
 
   std::shared_ptr<rclcpp::Node> node_;
   ConnectionStatus connection_status_;
@@ -90,6 +92,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr camera_sub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr arduino_control_sub_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;
+  bool prev_left_bumper_pressed_ = false;
 };
 
 }  // namespace moonpie_osamu
