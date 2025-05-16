@@ -82,16 +82,17 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   digAndDumpBtn = new QPushButton("Dig+Dump", this);
 
   // Create configuration controls
-  QHBoxLayout* configLayout = new QHBoxLayout();
+  QVBoxLayout* configLayout = new QVBoxLayout();
   
   // Dig time control
+  QHBoxLayout* timeLayout = new QHBoxLayout();
   QLabel* digTimeLabel = new QLabel("Dig Time (0.1s):", this);
   digTimeSpinBox = new QSpinBox(this);
   digTimeSpinBox->setRange(10, 1000);  // 1.0s to 100.0s
   digTimeSpinBox->setValue(200);  // Default to 20.0s
   digTimeSpinBox->setSingleStep(1);
-  configLayout->addWidget(digTimeLabel);
-  configLayout->addWidget(digTimeSpinBox);
+  timeLayout->addWidget(digTimeLabel);
+  timeLayout->addWidget(digTimeSpinBox);
 
   // Travel time control
   QLabel* travelTimeLabel = new QLabel("Travel Time (0.1s):", this);
@@ -99,17 +100,19 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   travelTimeSpinBox->setRange(10, 1000);  // 1.0s to 100.0s
   travelTimeSpinBox->setValue(30);  // Default to 3.0s
   travelTimeSpinBox->setSingleStep(1);
-  configLayout->addWidget(travelTimeLabel);
-  configLayout->addWidget(travelTimeSpinBox);
+  timeLayout->addWidget(travelTimeLabel);
+  timeLayout->addWidget(travelTimeSpinBox);
+  configLayout->addLayout(timeLayout);
 
   // Drive & Dig Speed control
+  QHBoxLayout* speedLayout = new QHBoxLayout();
   QLabel* driveAndDigSpeedLabel = new QLabel("Drive & Dig Speed (0.1 m/s):", this);
   driveAndDigSpeedSpinBox = new QSpinBox(this);
   driveAndDigSpeedSpinBox->setRange(1, 50);  // 0.1 to 5.0 m/s
   driveAndDigSpeedSpinBox->setValue(1);      // Default to 0.1 m/s (set to your default)
   driveAndDigSpeedSpinBox->setSingleStep(1);
-  configLayout->addWidget(driveAndDigSpeedLabel);
-  configLayout->addWidget(driveAndDigSpeedSpinBox);
+  speedLayout->addWidget(driveAndDigSpeedLabel);
+  speedLayout->addWidget(driveAndDigSpeedSpinBox);
 
   // Backward Travel Speed control
   QLabel* backwardTravelSpeedLabel = new QLabel("Backward Travel Speed (0.1 m/s):", this);
@@ -117,8 +120,9 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   backwardTravelSpeedSpinBox->setRange(1, 50);  // 0.1 to 5.0 m/s
   backwardTravelSpeedSpinBox->setValue(2);      // Default to 0.2 m/s (set to your default)
   backwardTravelSpeedSpinBox->setSingleStep(1);
-  configLayout->addWidget(backwardTravelSpeedLabel);
-  configLayout->addWidget(backwardTravelSpeedSpinBox);
+  speedLayout->addWidget(backwardTravelSpeedLabel);
+  speedLayout->addWidget(backwardTravelSpeedSpinBox);
+  configLayout->addLayout(speedLayout);
 
   // Send config button
   sendConfigBtn = new QPushButton("Send Config", this);
