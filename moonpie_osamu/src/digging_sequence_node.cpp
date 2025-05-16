@@ -201,6 +201,9 @@ private:
         break;
 
       case DigState::COMPLETE:
+        stopSequence();
+        break;
+
       case DigState::IDLE:
         sendControlMessage({
           {"cmd", true},
@@ -230,6 +233,10 @@ private:
   void stopSequence()
   {
     transitionToState(DigState::IDLE);
+    // Re-enable manual control
+    auto enable_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+    enable_msg->command = "ENABLE_MANUAL";
+    cmd_pub_->publish(std::move(enable_msg));
   }
 
   void sendControlMessage(const json& msg)
