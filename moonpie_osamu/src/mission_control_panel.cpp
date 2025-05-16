@@ -102,6 +102,24 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   configLayout->addWidget(travelTimeLabel);
   configLayout->addWidget(travelTimeSpinBox);
 
+  // Drive & Dig Speed control
+  QLabel* driveAndDigSpeedLabel = new QLabel("Drive & Dig Speed (0.1 m/s):", this);
+  driveAndDigSpeedSpinBox = new QSpinBox(this);
+  driveAndDigSpeedSpinBox->setRange(1, 50);  // 0.1 to 5.0 m/s
+  driveAndDigSpeedSpinBox->setValue(1);      // Default to 0.1 m/s (set to your default)
+  driveAndDigSpeedSpinBox->setSingleStep(1);
+  configLayout->addWidget(driveAndDigSpeedLabel);
+  configLayout->addWidget(driveAndDigSpeedSpinBox);
+
+  // Backward Travel Speed control
+  QLabel* backwardTravelSpeedLabel = new QLabel("Backward Travel Speed (0.1 m/s):", this);
+  backwardTravelSpeedSpinBox = new QSpinBox(this);
+  backwardTravelSpeedSpinBox->setRange(1, 50);  // 0.1 to 5.0 m/s
+  backwardTravelSpeedSpinBox->setValue(2);      // Default to 0.2 m/s (set to your default)
+  backwardTravelSpeedSpinBox->setSingleStep(1);
+  configLayout->addWidget(backwardTravelSpeedLabel);
+  configLayout->addWidget(backwardTravelSpeedSpinBox);
+
   // Send config button
   sendConfigBtn = new QPushButton("Send Config", this);
   sendConfigBtn->setStyleSheet("QPushButton { background-color: #2196F3; color: white; padding: 10px; font-size: 14px; }");
@@ -441,10 +459,14 @@ void MissionControlPanel::onSendConfig()
   msg->command = "CONFIG";
   msg->dig_time = digTimeSpinBox->value();
   msg->travel_time = travelTimeSpinBox->value();
+  msg->drive_and_dig_speed_tenths = driveAndDigSpeedSpinBox->value();
+  msg->backward_travel_speed_tenths = backwardTravelSpeedSpinBox->value();
   cmd_pub_->publish(std::move(msg));
-  appendLog(QString("Sent configuration: dig_time=%1, travel_time=%2")
+  appendLog(QString("Sent configuration: dig_time=%1, travel_time=%2, drive_and_dig_speed=%3, backward_travel_speed=%4")
     .arg(digTimeSpinBox->value() / 10.0)
-    .arg(travelTimeSpinBox->value() / 10.0));
+    .arg(travelTimeSpinBox->value() / 10.0)
+    .arg(driveAndDigSpeedSpinBox->value())
+    .arg(backwardTravelSpeedSpinBox->value()));
 }
 
 void MissionControlPanel::onStartMission()

@@ -67,6 +67,8 @@ private:
   QPushButton* sendConfigBtn;
   QSpinBox* digTimeSpinBox;
   QSpinBox* travelTimeSpinBox;
+  QSpinBox* driveAndDigSpeedSpinBox;
+  QSpinBox* backwardTravelSpeedSpinBox;
   QLabel* diggingStatusLabel;
 
   // Arduino control status labels

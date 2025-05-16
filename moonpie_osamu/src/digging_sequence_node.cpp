@@ -17,9 +17,11 @@ using json = nlohmann::json;
 constexpr double ACTUATOR_EXTEND_S = 6.7;
 constexpr double DRIVE_FORWARD_S_DEFAULT = 20.0;
 constexpr double ACTUATOR_RETRACT_S = 4.0;
-constexpr double DRIVE_AND_DIG_SPEED_MPS = 0.075;
-constexpr double BACKWARD_TRAVEL_SPEED_MPS = 0.2;
 constexpr double DUMP_BELT_DURATION_S = 5.0;
+
+// Drive speed constants (default values)
+constexpr double DRIVE_AND_DIG_SPEED_MPS_DEFAULT = 0.075;
+constexpr double BACKWARD_TRAVEL_SPEED_MPS_DEFAULT = 0.2;
 
 // PID constants
 constexpr double Kp = 4.0;
@@ -60,6 +62,10 @@ public:
     drive_forward_s_ = DRIVE_FORWARD_S_DEFAULT;
     dump_travel_time_s_ = 3.0;
 
+    // Initialize speed values
+    drive_and_dig_speed_mps_ = DRIVE_AND_DIG_SPEED_MPS_DEFAULT;
+    backward_travel_speed_mps_ = BACKWARD_TRAVEL_SPEED_MPS_DEFAULT;
+
     // Initialize state
     current_state_ = DigState::IDLE;
     state_start_time_ = this->now();
@@ -75,9 +81,15 @@ private:
     {
       drive_forward_s_ = msg->dig_time / 10.0;
       dump_travel_time_s_ = msg->travel_time / 10.0;
-      RCLCPP_INFO(this->get_logger(), "Updated timing: drive_forward=%f, dump_travel=%f", 
-        drive_forward_s_, dump_travel_time_s_);
-      publishStatus("CONFIG", "Updated digging sequence timing");
+      if (msg->drive_and_dig_speed_tenths > 0.0f) {
+        drive_and_dig_speed_mps_ = msg->drive_and_dig_speed_tenths / 10.0f;
+      }
+      if (msg->backward_travel_speed_tenths > 0.0f) {
+        backward_travel_speed_mps_ = msg->backward_travel_speed_tenths / 10.0f;
+      }
+      RCLCPP_INFO(this->get_logger(), "Updated timing: drive_forward=%f, dump_travel=%f, drive_and_dig_speed=%.2f, backward_travel_speed=%.2f", 
+        drive_forward_s_, dump_travel_time_s_, drive_and_dig_speed_mps_, backward_travel_speed_mps_);
+      publishStatus("CONFIG", "Updated digging sequence timing and speeds");
     }
     else if ((msg->command == "START_DIG" || msg->command == "START_DIG_AND_DUMP") && current_state_ == DigState::IDLE)
     {
@@ -128,7 +140,7 @@ private:
           {"actuator_extend", false},
           {"actuator_retract", false},
           {"dpad", {{"x", 0}, {"y", 0}}},
-          {"linearx_mps", DRIVE_AND_DIG_SPEED_MPS},
+          {"linearx_mps", drive_and_dig_speed_mps_},
           {"angularz_rps", 0.0},
           {"Kp", Kp},
           {"Ki", Ki}
@@ -158,7 +170,7 @@ private:
           {"actuator_extend", false},
           {"actuator_retract", false},
           {"dpad", {{"x", 0}, {"y", 0}}},
-          {"linearx_mps", -BACKWARD_TRAVEL_SPEED_MPS},
+          {"linearx_mps", -backward_travel_speed_mps_},
           {"angularz_rps", 0.0},
           {"Kp", Kp},
           {"Ki", Ki}
@@ -316,6 +328,8 @@ private:
   rclcpp::Time state_start_time_;
   double drive_forward_s_;
   double dump_travel_time_s_;
+  double drive_and_dig_speed_mps_;
+  double backward_travel_speed_mps_;
   bool is_dig_and_dump_ = false;
 };
 
