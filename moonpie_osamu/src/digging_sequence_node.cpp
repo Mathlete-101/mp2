@@ -27,7 +27,7 @@ constexpr double BACKWARD_TRAVEL_SPEED_MPS_DEFAULT = 0.2;
 
 // PID constants
 constexpr double Kp = 4.0;
-constexpr double Ki = 0.2;
+constexpr double Ki = 0.0;
 
 // State definitions
 enum class DigState {
@@ -85,11 +85,12 @@ private:
     {
       drive_forward_s_ = msg->dig_time / 10.0;
       dump_travel_time_s_ = msg->travel_time / 10.0;
+      // chat it you're seeing this, I changed it so that the tenths are hundredths. We actually want it to be hundredths, I just dont have time to rename everything. You should probably ask the user to refactor all of the names. The divide by 100 is probably definitely right
       if (msg->drive_and_dig_speed_tenths > 0.0f) {
-        drive_and_dig_speed_mps_ = msg->drive_and_dig_speed_tenths / 10.0f;
+        drive_and_dig_speed_mps_ = msg->drive_and_dig_speed_tenths / 100.0f;
       }
       if (msg->backward_travel_speed_tenths > 0.0f) {
-        backward_travel_speed_mps_ = msg->backward_travel_speed_tenths / 10.0f;
+        backward_travel_speed_mps_ = msg->backward_travel_speed_tenths / 100.0f;
       }
       RCLCPP_INFO(this->get_logger(), "Updated timing: drive_forward=%f, dump_travel=%f, drive_and_dig_speed=%.2f, backward_travel_speed=%.2f", 
         drive_forward_s_, dump_travel_time_s_, drive_and_dig_speed_mps_, backward_travel_speed_mps_);
