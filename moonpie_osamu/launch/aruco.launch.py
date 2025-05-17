@@ -16,8 +16,12 @@ def generate_launch_description():
         parameters=[{
             'marker_size': 0.139,  # Size in meters
             'marker_dict': '5X5_250',  # Removed DICT_ prefix
-            'cam_base_topic': '/camera1/camera1/color/image_raw'
-        }]
+            'cam_base_topic': '/rs_d435/image_raw'  # Updated to use RealSense D435 topic
+        }],
+        remappings=[
+            ('/camera1/camera1/color/image_raw', '/rs_d435/image_raw'),
+            ('/camera1/camera1/color/camera_info', '/rs_d435/image_raw/camera_info')
+        ]
     )
 
     # Create the launch description

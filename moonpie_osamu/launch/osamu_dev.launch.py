@@ -26,7 +26,7 @@ def generate_launch_description():
         default_value='True',
         description='Whether to launch RViz'
     )
-    
+
     # Include the osamu launch file with RViz enabled
     osamu_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -34,7 +34,7 @@ def generate_launch_description():
         ]),
         launch_arguments={
             'use_rviz': 'False',
-            'use_rtabmap_viz': 'True'  # Enable rtabmap_viz for development
+            'use_rtabmap_viz': 'True',  # Enable rtabmap_viz for development
         }.items()
     )
     

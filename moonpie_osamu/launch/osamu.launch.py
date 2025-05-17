@@ -71,18 +71,6 @@ def generate_launch_description():
         }.items()
     )
 
-    # Include the navigation launch file only if use_navigation is True
-    nav_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_share, 'launch', 'navigation.launch.py')
-        ),
-        condition=IfCondition(use_navigation),
-        launch_arguments={
-            'use_rviz': 'False'  # Disable RViz in nav_test since we're launching it here
-        }.items()
-    )
-
-    # Include the ArUco detection launch file
     aruco_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_share, 'launch', 'aruco.launch.py')
@@ -108,7 +96,6 @@ def generate_launch_description():
     ld.add_action(robot_description_launch)
     ld.add_action(realsense_launch)
     ld.add_action(slam_launch)
-    ld.add_action(nav_launch)
     ld.add_action(aruco_launch)
     ld.add_action(mission_control_launch)
 

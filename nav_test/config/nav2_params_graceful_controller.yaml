@@ -67,7 +67,7 @@ controller_server:
 planner_server:
   ros__parameters:
     planner_plugins: ["GridBased"]
-    use_sim_time: True
+    use_sim_time: false
 
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
@@ -93,20 +93,34 @@ local_costmap:
       robot_base_frame: "base_link"
       update_frequency: 5.0
       rolling_window: true
-      width: 10
-      height: 10
+      width: 20
+      height: 20
       resolution: 0.05
       inflation_layer:
         enabled: true
         inflation_radius: 0.675
       obstacle_layer:
         enabled: true
-        observation_sources: scan
-        scan:
-          data_type: "LaserScan"
-          topic: scan
+        observation_sources: pointcloud
+        pointcloud:
+          data_type: "sensor_msgs/PointCloud2"
+          topic: "/rs_d435/point_cloud"
           marking: true
           clearing: true
+          min_obstacle_height: 0.1
+          max_obstacle_height: 2.0
+          raytrace_range: 3.0
+          obstacle_range: 2.5
+          inf_is_valid: true
+          clearing: true
+          marking: true
+          data_type: "sensor_msgs/PointCloud2"
+          observation_persistence: 0.0
+          expected_update_rate: 0.0
+          voxel_filter: true
+          voxel_min_points: 0
+          voxel_size: 0.05
+          transform_tolerance: 0.2
       plugins: ["obstacle_layer", "inflation_layer"]
 
 global_costmap:
@@ -117,7 +131,7 @@ global_costmap:
       global_frame: "map"
       robot_base_frame: "base_link"
       update_frequency: 1.0
-      rolling_window: true
+      rolling_window: false
       width: 30
       height: 30
       resolution: 0.05
@@ -145,12 +159,26 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: true
-        observation_sources: scan
-        scan:
-          data_type: "LaserScan"
-          topic: scan
+        observation_sources: pointcloud
+        pointcloud:
+          data_type: "sensor_msgs/PointCloud2"
+          topic: "/rs_d435/point_cloud"
           marking: true
           clearing: true
+          min_obstacle_height: 0.1
+          max_obstacle_height: 2.0
+          raytrace_range: 3.0
+          obstacle_range: 2.5
+          inf_is_valid: true
+          clearing: true
+          marking: true
+          data_type: "sensor_msgs/PointCloud2"
+          observation_persistence: 0.0
+          expected_update_rate: 0.0
+          voxel_filter: true
+          voxel_min_points: 0
+          voxel_size: 0.05
+          transform_tolerance: 0.2
       plugins: ["map_layer", "obstacle_layer", "inflation_layer"]
 
 lifecycle_manager:

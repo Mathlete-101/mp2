@@ -17,7 +17,6 @@ def generate_launch_description():
     autostart = LaunchConfiguration('autostart')
     params_file = LaunchConfiguration('params_file')
     bt_xml_file = LaunchConfiguration('bt_xml_file')
-    map_yaml_file = LaunchConfiguration('map')
 
     # Declare the launch arguments
     declare_use_sim_time_cmd = DeclareLaunchArgument(
@@ -29,8 +28,6 @@ def generate_launch_description():
         'autostart', default_value='true',
         description='Automatically startup the nav2 stack')
 
-
-    #default_params_filename = 'nav2_params_dwb_controller.yaml'
     default_params_filename = 'nav2_params_graceful_controller.yaml'
     default_params_file = os.path.join(nav_test_dir, 'config', default_params_filename)
 
@@ -46,11 +43,6 @@ def generate_launch_description():
             'behavior_trees', 'navigate_w_replanning_and_recovery.xml'),
         description='Full path to the behavior tree xml file to use')
 
-    declare_map_yaml_cmd = DeclareLaunchArgument(
-        'map',
-        default_value='',  # Empty string since we're not using a static map
-        description='Dummy map path (not used)')
-
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -59,29 +51,92 @@ def generate_launch_description():
     ld.add_action(declare_autostart_cmd)
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_bt_xml_cmd)
-    ld.add_action(declare_map_yaml_cmd)
 
-    # Include the launch files
-    nav2_bringup_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
-        launch_arguments={
-            'use_sim_time': use_sim_time,
-            'autostart': autostart,
-            'params_file': params_file,
-            'bt_xml_file': bt_xml_file,
-            'map': map_yaml_file,
-            'slam': 'False',
-            'use_lifecycle_mgr': 'true',
-            'map_server': 'false',  # Disable map server since we're not using a static map
-            'amcl': 'false',  # Disable AMCL since we're not using a static map
-            'controller_server': 'true',
-            'planner_server': 'true',
-            'recoveries_server': 'true',
-            'bt_navigator': 'true',
-            'waypoint_follower': 'true',
-            'use_rviz': 'false',  # Disable RViz since we're launching it separately
-        }.items())
+    # Launch the navigation nodes directly instead of using nav2_bringup
+    controller_server_node = Node(
+        package='nav2_controller',
+        executable='controller_server',
+        name='controller_server',
+        output='screen',
+        parameters=[params_file],
+        remappings=[('cmd_vel', 'cmd_vel_nav')]
+    )
 
-    ld.add_action(nav2_bringup_cmd)
+    planner_server_node = Node(
+        package='nav2_planner',
+        executable='planner_server',
+        name='planner_server',
+        output='screen',
+        parameters=[params_file]
+    )
+
+    recoveries_server_node = Node(
+        package='nav2_behaviors',
+        executable='behavior_server',
+        name='recoveries_server',
+        output='screen',
+        parameters=[params_file]
+    )
+
+    bt_navigator_node = Node(
+        package='nav2_bt_navigator',
+        executable='bt_navigator',
+        name='bt_navigator',
+        output='screen',
+        parameters=[params_file, {'bt_xml_filename': bt_xml_file}]
+    )
+
+    waypoint_follower_node = Node(
+        package='nav2_waypoint_follower',
+        executable='waypoint_follower',
+        name='waypoint_follower',
+        output='screen',
+        parameters=[params_file]
+    )
+
+    local_costmap_node = Node(
+        package='nav2_costmap_2d',
+        executable='nav2_costmap_2d',
+        name='local_costmap',
+        output='screen',
+        parameters=[params_file],
+        remappings=[('costmap_raw', 'local_costmap/costmap_raw'),
+                   ('costmap_updates', 'local_costmap/costmap_updates')]
+    )
+
+    global_costmap_node = Node(
+        package='nav2_costmap_2d',
+        executable='nav2_costmap_2d',
+        name='global_costmap',
+        output='screen',
+        parameters=[params_file],
+        remappings=[('costmap_raw', 'global_costmap/costmap_raw'),
+                   ('costmap_updates', 'global_costmap/costmap_updates')]
+    )
+
+    lifecycle_manager_node = Node(
+        package='nav2_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle_manager_navigation',
+        output='screen',
+        parameters=[{'autostart': autostart},
+                   {'node_names': ['controller_server',
+                                 'planner_server',
+                                 'recoveries_server',
+                                 'bt_navigator',
+                                 'waypoint_follower',
+                                 'local_costmap',
+                                 'global_costmap']}]
+    )
+
+    # Add the nodes
+    ld.add_action(controller_server_node)
+    ld.add_action(planner_server_node)
+    ld.add_action(recoveries_server_node)
+    ld.add_action(bt_navigator_node)
+    ld.add_action(waypoint_follower_node)
+    ld.add_action(local_costmap_node)
+    ld.add_action(global_costmap_node)
+    ld.add_action(lifecycle_manager_node)
 
     return ld 
