@@ -623,7 +623,7 @@ void MissionControlPanel::onJoy(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
     // Trigger dig and dump sequence
     auto cmd_msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
-    cmd_msg->command = "START_DIG_AND_DUMP";
+    cmd_msg->command = "START_DIG";
     cmd_pub_->publish(std::move(cmd_msg));
     appendLog("[JOY] Left bumper pressed: Sent start dig and dump sequence command");
     updateConnectionStatus(ConnectionStatus::RUNNING);
