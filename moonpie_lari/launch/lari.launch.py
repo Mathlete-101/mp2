@@ -17,5 +17,9 @@ def generate_launch_description():
             package='ros2_mpu6050', executable='ros2_mpu6050', output='screen',
             parameters=parameters,
             remappings=remappings),
+        Node(
+            package='usb_cam', executable='usb_cam_node_exe', output='screen',
+            parameters=parameters,
+            remappings=remappings),
             
     ])

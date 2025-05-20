@@ -34,6 +34,7 @@ Kp = 4
 
 class ArduinoControl(Node):
     def __init__(self):
+        print('yeet')
         super().__init__('arduino_control')
         self.twist_subscription = self.create_subscription(
             Twist,
