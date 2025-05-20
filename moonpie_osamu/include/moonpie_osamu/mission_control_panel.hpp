@@ -52,6 +52,7 @@ private:
   void appendLog(const QString& message);
   void onBehaviorStatus(const moonpie_osamu::msg::BehaviorStatus::SharedPtr msg);
   void onCameraImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg);
+  void onBrioCameraImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg);
   void onArduinoControl(const std_msgs::msg::String::SharedPtr msg);
   void onCmdVel(const geometry_msgs::msg::Twist::SharedPtr msg);
   void onJoy(const sensor_msgs::msg::Joy::SharedPtr msg);
@@ -61,6 +62,7 @@ private:
 
   // UI Elements
   QLabel* cameraView;
+  QLabel* brioCameraView;
   QTextEdit* statusDisplay;
   QTextEdit* logDisplay;
   QPushButton* startDiggingBtn;
@@ -90,6 +92,7 @@ private:
   rclcpp::Publisher<moonpie_osamu::msg::MissionCommand>::SharedPtr cmd_pub_;
   rclcpp::Subscription<moonpie_osamu::msg::BehaviorStatus>::SharedPtr behavior_status_sub_;
   rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr camera_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr brio_camera_sub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr arduino_control_sub_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub_;

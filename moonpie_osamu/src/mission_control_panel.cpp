@@ -40,12 +40,31 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   QVBoxLayout* leftPanel = new QVBoxLayout();
   leftPanel->setSpacing(10);
 
-  // Create camera view
+  // Create camera views container
+  QHBoxLayout* cameraLayout = new QHBoxLayout();
+  cameraLayout->setSpacing(10);
+
+  // Create D435 camera view
   cameraView = new QLabel(this);
-  cameraView->setMinimumSize(640, 480);
+  cameraView->setMinimumSize(480, 360);  // Made bigger
   cameraView->setAlignment(Qt::AlignCenter);
   cameraView->setStyleSheet("QLabel { background-color: black; }");
-  leftPanel->addWidget(cameraView);
+  QVBoxLayout* d435Layout = new QVBoxLayout();
+  d435Layout->addWidget(new QLabel("D435 Camera", this));
+  d435Layout->addWidget(cameraView);
+  cameraLayout->addLayout(d435Layout);
+
+  // Create Brio camera view
+  brioCameraView = new QLabel(this);
+  brioCameraView->setMinimumSize(480, 360);  // Made bigger
+  brioCameraView->setAlignment(Qt::AlignCenter);
+  brioCameraView->setStyleSheet("QLabel { background-color: black; }");
+  QVBoxLayout* brioLayout = new QVBoxLayout();
+  brioLayout->addWidget(new QLabel("Brio Camera", this));
+  brioLayout->addWidget(brioCameraView);
+  cameraLayout->addLayout(brioLayout);
+
+  leftPanel->addLayout(cameraLayout);
 
   // Create status display
   statusDisplay = new QTextEdit(this);
@@ -262,6 +281,11 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
     "joy", 10,
     std::bind(&MissionControlPanel::onJoy, this, std::placeholders::_1));
 
+  // Create subscriber for Brio camera feed
+  brio_camera_sub_ = node_->create_subscription<sensor_msgs::msg::CompressedImage>(
+    "/image_raw/compressed", 10,
+    std::bind(&MissionControlPanel::onBrioCameraImage, this, std::placeholders::_1));
+
   // Send initial test command
   QTimer::singleShot(1000, this, &MissionControlPanel::sendTestCommand);
 
@@ -379,6 +403,7 @@ void MissionControlPanel::onCameraImage(const sensor_msgs::msg::CompressedImage:
 
     // Convert to QImage
     QImage image(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
+    image = image.copy();  // Create a deep copy to ensure data ownership
     
     // Scale image to fit display while maintaining aspect ratio
     QPixmap pixmap = QPixmap::fromImage(image);
@@ -389,6 +414,35 @@ void MissionControlPanel::onCameraImage(const sensor_msgs::msg::CompressedImage:
   }
   catch (const std::exception& e) {
     RCLCPP_ERROR(node_->get_logger(), "Error processing camera image: %s", e.what());
+  }
+}
+
+void MissionControlPanel::onBrioCameraImage(const sensor_msgs::msg::CompressedImage::SharedPtr msg)
+{
+  try {
+    // Convert compressed image to cv::Mat
+    cv::Mat frame = cv::imdecode(cv::Mat(msg->data), cv::IMREAD_COLOR);
+    if (frame.empty()) {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to decode Brio compressed image");
+      return;
+    }
+
+    // Convert BGR to RGB
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+
+    // Convert to QImage
+    QImage image(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
+    image = image.copy();  // Create a deep copy to ensure data ownership
+    
+    // Scale image to fit display while maintaining aspect ratio
+    QPixmap pixmap = QPixmap::fromImage(image);
+    pixmap = pixmap.scaled(brioCameraView->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    
+    // Update display
+    brioCameraView->setPixmap(pixmap);
+  }
+  catch (const std::exception& e) {
+    RCLCPP_ERROR(node_->get_logger(), "Error processing Brio camera image: %s", e.what());
   }
 }
 

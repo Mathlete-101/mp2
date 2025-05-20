@@ -111,7 +111,7 @@ def generate_launch_description():
             package='rtabmap_slam', 
             executable='rtabmap', 
             output='screen',
-            arguments=['--ros-args', '--log-level', 'rtabmap_slam:=warn', '-d'],
+            arguments=['--ros-args', '--log-level', 'rtabmap:=warn', '-d'],
             parameters=parameters,
             remappings=remappings),
 
