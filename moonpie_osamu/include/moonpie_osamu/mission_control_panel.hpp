@@ -43,6 +43,7 @@ private slots:
   void onStartDiggingSequence();
   void onStopDiggingSequence();
   void onStartDigAndDumpSequence();
+  void onStartDigAndDumpX3Sequence();
   void sendTestCommand();
   void onSendConfig();
 
@@ -68,6 +69,7 @@ private:
   QPushButton* startDiggingBtn;
   QPushButton* stopDiggingBtn;
   QPushButton* digAndDumpBtn;
+  QPushButton* digAndDumpX3Btn;
   QPushButton* sendConfigBtn;
   QSpinBox* digTimeSpinBox;
   QSpinBox* travelTimeSpinBox;

@@ -100,6 +100,7 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   startDiggingBtn = new QPushButton("Start Digging", this);
   stopDiggingBtn = new QPushButton("Stop Digging", this);
   digAndDumpBtn = new QPushButton("Dig+Dump", this);
+  digAndDumpX3Btn = new QPushButton("Dig+Dump x3", this);
 
   // Create configuration controls
   QVBoxLayout* configLayout = new QVBoxLayout();
@@ -153,11 +154,13 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   startDiggingBtn->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; padding: 10px; font-size: 14px; }");
   stopDiggingBtn->setStyleSheet("QPushButton { background-color: #f44336; color: white; padding: 10px; font-size: 14px; }");
   digAndDumpBtn->setStyleSheet("QPushButton { background-color: #FF9800; color: white; padding: 10px; font-size: 14px; }");
+  digAndDumpX3Btn->setStyleSheet("QPushButton { background-color: #9C27B0; color: white; padding: 10px; font-size: 14px; }");
 
   // Add buttons to digging layout
   diggingLayout->addLayout(configLayout);
   diggingLayout->addWidget(startDiggingBtn);
   diggingLayout->addWidget(digAndDumpBtn);
+  diggingLayout->addWidget(digAndDumpX3Btn);
   diggingLayout->addWidget(stopDiggingBtn);
   diggingLayout->addStretch();
 
@@ -255,6 +258,7 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   connect(startDiggingBtn, &QPushButton::clicked, this, &MissionControlPanel::onStartDiggingSequence);
   connect(stopDiggingBtn, &QPushButton::clicked, this, &MissionControlPanel::onStopDiggingSequence);
   connect(digAndDumpBtn, &QPushButton::clicked, this, &MissionControlPanel::onStartDigAndDumpSequence);
+  connect(digAndDumpX3Btn, &QPushButton::clicked, this, &MissionControlPanel::onStartDigAndDumpX3Sequence);
   connect(sendConfigBtn, &QPushButton::clicked, this, &MissionControlPanel::onSendConfig);
 
   // Create command publisher
@@ -589,6 +593,17 @@ void MissionControlPanel::onStartDigAndDumpSequence()
   msg->command = "START_DIG_AND_DUMP";
   cmd_pub_->publish(std::move(msg));
   appendLog("Sent start dig and dump sequence command");
+  updateConnectionStatus(ConnectionStatus::RUNNING);
+}
+
+void MissionControlPanel::onStartDigAndDumpX3Sequence()
+{
+  // Digging sequence is independent of mission control node
+  // Always send the command regardless of connection status
+  auto msg = std::make_unique<moonpie_osamu::msg::MissionCommand>();
+  msg->command = "START_DIG_AND_DUMP_X3";
+  cmd_pub_->publish(std::move(msg));
+  appendLog("Sent start dig and dump x3 sequence command");
   updateConnectionStatus(ConnectionStatus::RUNNING);
 }
 

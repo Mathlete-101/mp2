@@ -32,6 +32,7 @@ constexpr double Ki = 0.0;
 // State definitions
 enum class DigState {
   IDLE,
+  MOVE_TO_POSITION,  // New state for initial positioning
   EXTENDING_ACTUATOR,
   DRIVING_FORWARD,
   RETRACTING_ACTUATOR,
@@ -74,6 +75,10 @@ public:
     last_periodic_dump_time_ = this->now();
     is_periodic_dumping_ = false;
 
+    // Initialize repetition counter
+    current_cycle_ = 0;
+    total_cycles_ = 1;  // Default to 1 cycle (original behavior)
+
     publishStatus("IDLE", "Digging sequence node initialized");
     RCLCPP_INFO(this->get_logger(), "Digging sequence node initialized");
   }
@@ -96,10 +101,17 @@ private:
         drive_forward_s_, dump_travel_time_s_, drive_and_dig_speed_mps_, backward_travel_speed_mps_);
       publishStatus("CONFIG", "Updated digging sequence timing and speeds");
     }
-    else if ((msg->command == "START_DIG" || msg->command == "START_DIG_AND_DUMP") && current_state_ == DigState::IDLE)
+    else if ((msg->command == "START_DIG" || msg->command == "START_DIG_AND_DUMP" || msg->command == "START_DIG_AND_DUMP_X3") && current_state_ == DigState::IDLE)
     {
       RCLCPP_INFO(this->get_logger(), "Starting digging sequence");
-      is_dig_and_dump_ = (msg->command == "START_DIG_AND_DUMP");
+      is_dig_and_dump_ = (msg->command == "START_DIG_AND_DUMP" || msg->command == "START_DIG_AND_DUMP_X3");
+      if (msg->command == "START_DIG_AND_DUMP_X3") {
+        total_cycles_ = 3;
+        RCLCPP_INFO(this->get_logger(), "Running dig+dump sequence 3 times");
+      } else {
+        total_cycles_ = 1;
+      }
+      current_cycle_ = 0;
       transitionToState(DigState::EXTENDING_ACTUATOR);
 
       // Send disable manual control command
@@ -122,6 +134,21 @@ private:
     // Send appropriate control message for the new state
     switch (current_state_)
     {
+      case DigState::MOVE_TO_POSITION:
+        sendControlMessage({
+          {"cmd", true},
+          {"dump_belt", 0},
+          {"dig_belt", 0},
+          {"actuator_extend", false},
+          {"actuator_retract", false},
+          {"dpad", {{"x", 0}, {"y", 0}}},
+          {"linearx_mps", drive_and_dig_speed_mps_},
+          {"angularz_rps", 0.0},
+          {"Kp", Kp},
+          {"Ki", Ki}
+        });
+        break;
+
       case DigState::EXTENDING_ACTUATOR:
         sendControlMessage({
           {"cmd", true},
@@ -225,9 +252,11 @@ private:
     if (current_state_ == DigState::IDLE) {
       publishStatus("IDLE", "Digging sequence stopped by user");
     } else if (current_state_ == DigState::COMPLETE) {
-      publishStatus("IDLE", "Digging sequence stopped by user");
+      publishStatus("IDLE", "Digging sequence completed");
     } else {
-      publishStatus("DIGGING", getStateDescription());
+      std::string cycle_info = total_cycles_ > 1 ? 
+        " (Cycle " + std::to_string(current_cycle_ + 1) + "/" + std::to_string(total_cycles_) + ")" : "";
+      publishStatus("DIGGING", getStateDescription() + cycle_info);
     }
   }
 
@@ -261,6 +290,8 @@ private:
     switch (current_state_) {
       case DigState::IDLE:
         return "Idle";
+      case DigState::MOVE_TO_POSITION:
+        return "Moving to Position";
       case DigState::EXTENDING_ACTUATOR:
         return "Extending Actuator";
       case DigState::DRIVING_FORWARD:
@@ -328,6 +359,12 @@ private:
     // Check if current state should transition
     switch (current_state_)
     {
+      case DigState::MOVE_TO_POSITION:
+        if (elapsed >= 2.0) {  // Move forward for 2 seconds
+          transitionToState(DigState::EXTENDING_ACTUATOR);
+        }
+        break;
+
       case DigState::EXTENDING_ACTUATOR:
         if (elapsed >= ACTUATOR_EXTEND_S) {
           transitionToState(DigState::DRIVING_FORWARD);
@@ -358,7 +395,14 @@ private:
 
       case DigState::RUNNING_DUMP_BELT:
         if (elapsed >= DUMP_BELT_DURATION_S) {
-          transitionToState(DigState::COMPLETE);
+          if (total_cycles_ > 1 && current_cycle_ < total_cycles_ - 1) {
+            // More cycles to go
+            current_cycle_++;
+            transitionToState(DigState::EXTENDING_ACTUATOR);
+          } else {
+            // All cycles complete
+            transitionToState(DigState::COMPLETE);
+          }
         }
         break;
 
@@ -369,6 +413,32 @@ private:
       default:
         break;
     }
+  }
+
+  void startDigAndDumpX3Sequence()
+  {
+    if (current_state_ != DigState::IDLE) {
+      RCLCPP_WARN(get_logger(), "Cannot start sequence while another is in progress");
+      return;
+    }
+
+    is_dig_and_dump_ = true;
+    total_cycles_ = 3;
+    current_cycle_ = 0;
+    transitionToState(DigState::MOVE_TO_POSITION);  // Start with positioning
+  }
+
+  void startDigAndDumpSequence()
+  {
+    if (current_state_ != DigState::IDLE) {
+      RCLCPP_WARN(get_logger(), "Cannot start sequence while another is in progress");
+      return;
+    }
+
+    is_dig_and_dump_ = true;
+    total_cycles_ = 1;  // Single cycle for regular dig+dump
+    current_cycle_ = 0;
+    transitionToState(DigState::EXTENDING_ACTUATOR);  // Start directly with actuator
   }
 
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr arduino_command_pub_;
@@ -387,6 +457,8 @@ private:
   double drive_and_dig_speed_mps_;
   double backward_travel_speed_mps_;
   bool is_dig_and_dump_ = false;
+  int current_cycle_;
+  int total_cycles_;
 };
 
 int main(int argc, char * argv[])
