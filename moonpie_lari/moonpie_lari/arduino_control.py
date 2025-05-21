@@ -63,6 +63,7 @@ class ArduinoControl(Node):
         self.arduino_command_publisher = self.create_publisher(String, 'arduino_command', 10)
         self.status_publisher = self.create_publisher(BehaviorStatus, 'mission/log', 10)
         self.cmd_publisher = self.create_publisher(MissionCommand, 'mission/cmd', 10)
+        self.resends = 0
 
         # Create subscriptions
         self.twist_subscription = self.create_subscription(
@@ -148,8 +149,8 @@ class ArduinoControl(Node):
         elif msg.command == "CONFIG":
             self.dig_time_s = msg.dig_time / 10.0
             self.travel_time_s = msg.travel_time / 10.0
-            self.drive_and_dig_speed_mps = msg.drive_and_dig_speed_tenths / 10.0
-            self.backward_travel_speed_mps = msg.backward_travel_speed_tenths / 10.0
+            self.drive_and_dig_speed_mps = msg.drive_and_dig_speed_tenths / 100.0
+            self.backward_travel_speed_mps = msg.backward_travel_speed_tenths / 100.0
             self.forward_move_time_s = msg.forward_move_time / 10.0
             self.actuator_lower_time_s = msg.actuator_lower_time / 10.0
             self.drive_forward_s = self.dig_time_s
@@ -158,6 +159,7 @@ class ArduinoControl(Node):
     def transition_to_state(self, new_state):
         self.current_state = new_state
         self.state_start_time = time.time()
+        self.resends = 0
         
         # Reset drive timer when entering RESET_DRIVE_TIMER state
         if new_state == DigState.RESET_DRIVE_TIMER:
@@ -167,6 +169,8 @@ class ArduinoControl(Node):
         if new_state == DigState.TELEOP:
             # In teleop, we keep the current control values but ensure we're not in any automated mode
             self.update_control_message(
+                dump_belt=0,
+                dig_belt=0,
                 actuator_extend=False,
                 actuator_retract=False,
                 linearx_mps=0.0,
@@ -232,7 +236,11 @@ class ArduinoControl(Node):
 
     def sequence_timer_callback(self):
         if self.current_state in [DigState.IDLE, DigState.TELEOP]:
-            return
+            self.send_control_message()
+        else:
+            if self.resends < 10 & self.resends % 3 == 0:
+                self.send_control_message()
+            self.resends+=1
 
         current_time = time.time()
         elapsed = current_time - self.state_start_time
@@ -313,7 +321,7 @@ class ArduinoControl(Node):
         # Update X and Y button movement flags
         x_button = msg.buttons[2]  # X button
         # just disable the y button for now
-        y_button = False  # msg.buttons[3]  # Y button (index 3)
+        y_button = msg.buttons[3]  # Y button (index 3)
         
         # Handle X button state changes
         self.x_button_forward = x_button
