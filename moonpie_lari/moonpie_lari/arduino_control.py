@@ -119,6 +119,7 @@ class ArduinoControl(Node):
         self.prev_dig_button = False
         self.x_button_forward = False  # Flag for X button forward movement
         self.y_button_backward = False  # Flag for Y button backward movement
+        self.prev_y_button = False  # Track previous Y button state
 
         # Create timer for sequence control
         self.sequence_timer = self.create_timer(0.1, self.sequence_timer_callback)
@@ -141,7 +142,7 @@ class ArduinoControl(Node):
             self.is_dig_and_dump = True
             self.total_cycles = 3
             self.current_cycle = 0
-            self.transition_to_state(DigState.MOVE_TO_START)  # Only use MOVE_TO_START for 3x dig+dump
+            self.transition_to_state(DigState.MOVE_TO_POSITION)  # Only use MOVE_TO_START for 3x dig+dump
         elif msg.command == "STOP_DIG":
             self.stop_sequence()
         elif msg.command == "CONFIG":
@@ -218,6 +219,15 @@ class ArduinoControl(Node):
         self.status_publisher.publish(msg)
 
     def stop_sequence(self):
+        # Immediately stop all motors and actuators
+        self.update_control_message(
+            dig_belt=0,
+            dump_belt=0,
+            actuator_extend=False,
+            actuator_retract=False,
+            linearx_mps=0.0,
+            angularz_rps=0.0
+        )
         self.transition_to_state(DigState.TELEOP)
 
     def sequence_timer_callback(self):
@@ -270,6 +280,26 @@ class ArduinoControl(Node):
             else:
                 self.transition_to_state(DigState.TELEOP)
 
+    def cmd_vel(self, msg):
+        if self.current_state != DigState.TELEOP:
+            return
+
+        # Update velocity message
+        if self.x_button_forward:
+            linearx = self.drive_and_dig_speed_mps
+        elif self.y_button_backward:
+            linearx = -self.drive_and_dig_speed_mps
+        else:
+            linearx = msg.linear.x
+
+        # Only update movement-related fields
+        self.control_message.update({
+            "linearx_mps": linearx,
+            "angularz_rps": msg.angular.z * -1,
+        })
+        # Send the complete control message after all updates
+        self.send_control_message()
+
     def joy(self, msg):
         if self.current_state != DigState.TELEOP:
             return
@@ -281,10 +311,17 @@ class ArduinoControl(Node):
         self.prev_dig_button = dig_button
 
         # Update X and Y button movement flags
-        self.x_button_forward = msg.buttons[2]
-        self.y_button_backward = msg.buttons[3]
+        x_button = msg.buttons[2]  # X button
+        # just disable the y button for now
+        y_button = False  # msg.buttons[3]  # Y button (index 3)
+        
+        # Handle X button state changes
+        self.x_button_forward = x_button
 
-        # Update control message for manual control
+        # Handle Y button state changes
+        self.y_button_backward = y_button  # Direct assignment like X button
+
+        # Update control message for manual control (only non-movement controls)
         self.control_message.update({
             "dump_belt": msg.buttons[1],
             "dig_belt": 1 if self.dig_belt_on else 0,
@@ -292,25 +329,6 @@ class ArduinoControl(Node):
             "actuator_retract": msg.axes[7] > 0,
             "dpad": {"x": msg.axes[6], "y": msg.axes[7]},
         })
-        self.send_control_message()
-
-    def cmd_vel(self, msg):
-        if self.current_state != DigState.TELEOP:
-            return
-
-        # Update velocity message
-        if self.x_button_forward:
-            linearx = self.drive_and_dig_speed_mps
-        elif self.y_button_backward:
-            linearx = -self.backward_travel_speed_mps
-        else:
-            linearx = msg.linear.x
-
-        self.control_message.update({
-            "linearx_mps": linearx,
-            "angularz_rps": msg.angular.z * -1,
-        })
-        self.send_control_message()
 
 def main(args=None):
     rclpy.init(args=args)
