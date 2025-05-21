@@ -67,3 +67,5 @@ moonpie_osamu/maps
 moonpie_lari/moonpie_lari/log
 *.swp
 *.log
+moonpie_osamu/share
+startup_scripts/install
