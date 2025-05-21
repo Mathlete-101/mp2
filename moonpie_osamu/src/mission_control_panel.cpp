@@ -105,7 +105,7 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   // Create configuration controls
   QVBoxLayout* configLayout = new QVBoxLayout();
   
-  // Dig time control
+  // First row of time controls
   QHBoxLayout* timeLayout = new QHBoxLayout();
   QLabel* digTimeLabel = new QLabel("Dig Time (0.1s):", this);
   digTimeSpinBox = new QSpinBox(this);
@@ -115,7 +115,6 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   timeLayout->addWidget(digTimeLabel);
   timeLayout->addWidget(digTimeSpinBox);
 
-  // Travel time control
   QLabel* travelTimeLabel = new QLabel("Travel Time (0.1s):", this);
   travelTimeSpinBox = new QSpinBox(this);
   travelTimeSpinBox->setRange(10, 1000);  // 1.0s to 100.0s
@@ -125,21 +124,40 @@ MissionControlPanel::MissionControlPanel(QWidget * parent)
   timeLayout->addWidget(travelTimeSpinBox);
   configLayout->addLayout(timeLayout);
 
+  // Second row of time controls
+  QHBoxLayout* timeLayout2 = new QHBoxLayout();
+  QLabel* forwardMoveTimeLabel = new QLabel("Forward Move Time (0.1s):", this);
+  forwardMoveTimeSpinBox = new QSpinBox(this);
+  forwardMoveTimeSpinBox->setRange(10, 1000);  // 1.0s to 100.0s
+  forwardMoveTimeSpinBox->setValue(20);  // Default to 2.0s
+  forwardMoveTimeSpinBox->setSingleStep(1);
+  timeLayout2->addWidget(forwardMoveTimeLabel);
+  timeLayout2->addWidget(forwardMoveTimeSpinBox);
+
+  QLabel* actuatorLowerTimeLabel = new QLabel("Actuator Lower Time (0.1s):", this);
+  actuatorLowerTimeSpinBox = new QSpinBox(this);
+  actuatorLowerTimeSpinBox->setRange(10, 1000);  // 1.0s to 100.0s
+  actuatorLowerTimeSpinBox->setValue(40);  // Default to 4.0s
+  actuatorLowerTimeSpinBox->setSingleStep(1);
+  timeLayout2->addWidget(actuatorLowerTimeLabel);
+  timeLayout2->addWidget(actuatorLowerTimeSpinBox);
+  configLayout->addLayout(timeLayout2);
+
   // Drive & Dig Speed control
   QHBoxLayout* speedLayout = new QHBoxLayout();
-  QLabel* driveAndDigSpeedLabel = new QLabel("Drive & Dig Speed (0.1 m/s):", this);
+  QLabel* driveAndDigSpeedLabel = new QLabel("Drive & Dig Speed (cm/s):", this);
   driveAndDigSpeedSpinBox = new QSpinBox(this);
-  driveAndDigSpeedSpinBox->setRange(1, 50);  // 0.1 to 5.0 m/s
-  driveAndDigSpeedSpinBox->setValue(1);      // Default to 0.1 m/s (set to your default)
+  driveAndDigSpeedSpinBox->setRange(1, 50);  // 1 to 50 cm/s
+  driveAndDigSpeedSpinBox->setValue(10);      // Default to 10 cm/s
   driveAndDigSpeedSpinBox->setSingleStep(1);
   speedLayout->addWidget(driveAndDigSpeedLabel);
   speedLayout->addWidget(driveAndDigSpeedSpinBox);
 
   // Backward Travel Speed control
-  QLabel* backwardTravelSpeedLabel = new QLabel("Backward Travel Speed (0.1 m/s):", this);
+  QLabel* backwardTravelSpeedLabel = new QLabel("Backward Travel Speed (cm/s):", this);
   backwardTravelSpeedSpinBox = new QSpinBox(this);
-  backwardTravelSpeedSpinBox->setRange(1, 50);  // 0.1 to 5.0 m/s
-  backwardTravelSpeedSpinBox->setValue(2);      // Default to 0.2 m/s (set to your default)
+  backwardTravelSpeedSpinBox->setRange(1, 50);  // 1 to 50 cm/s
+  backwardTravelSpeedSpinBox->setValue(20);      // Default to 20 cm/s
   backwardTravelSpeedSpinBox->setSingleStep(1);
   speedLayout->addWidget(backwardTravelSpeedLabel);
   speedLayout->addWidget(backwardTravelSpeedSpinBox);
@@ -514,12 +532,16 @@ void MissionControlPanel::onSendConfig()
   msg->travel_time = travelTimeSpinBox->value();
   msg->drive_and_dig_speed_tenths = driveAndDigSpeedSpinBox->value();
   msg->backward_travel_speed_tenths = backwardTravelSpeedSpinBox->value();
+  msg->forward_move_time = forwardMoveTimeSpinBox->value();
+  msg->actuator_lower_time = actuatorLowerTimeSpinBox->value();
   cmd_pub_->publish(std::move(msg));
-  appendLog(QString("Sent configuration: dig_time=%1, travel_time=%2, drive_and_dig_speed=%3, backward_travel_speed=%4")
+  appendLog(QString("Sent configuration: dig_time=%1, travel_time=%2, drive_and_dig_speed=%3, backward_travel_speed=%4, forward_move_time=%5, actuator_lower_time=%6")
     .arg(digTimeSpinBox->value() / 10.0)
     .arg(travelTimeSpinBox->value() / 10.0)
     .arg(driveAndDigSpeedSpinBox->value())
-    .arg(backwardTravelSpeedSpinBox->value()));
+    .arg(backwardTravelSpeedSpinBox->value())
+    .arg(forwardMoveTimeSpinBox->value() / 10.0)
+    .arg(actuatorLowerTimeSpinBox->value() / 10.0));
 }
 
 void MissionControlPanel::onStartMission()
@@ -588,6 +610,8 @@ void MissionControlPanel::onConfigClicked()
     msg->travel_time = travelTimeSpinBox->value();
     msg->drive_and_dig_speed_tenths = driveAndDigSpeedSpinBox->value();
     msg->backward_travel_speed_tenths = backwardTravelSpeedSpinBox->value();
+    msg->forward_move_time = forwardMoveTimeSpinBox->value();
+    msg->actuator_lower_time = actuatorLowerTimeSpinBox->value();
     cmd_pub_->publish(std::move(msg));
     appendLog("Sent configuration command");
 }

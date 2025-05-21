@@ -12,9 +12,7 @@ import json
 from moonpie_osamu.msg import MissionCommand, BehaviorStatus
 
 # Timing constants
-ACTUATOR_EXTEND_S = 4.0
 DRIVE_FORWARD_S_DEFAULT = 20.0
-ACTUATOR_RETRACT_S = 4.3
 DUMP_BELT_DURATION_S = 5.0
 PERIODIC_DUMP_INTERVAL_S = 5.0
 PERIODIC_DUMP_DURATION_S = 1.0
@@ -34,10 +32,12 @@ class DigState:
     MOVE_TO_START = 2  # New state for positioning before 3x dig
     MOVE_TO_POSITION = 3
     EXTENDING_ACTUATOR = 4
-    DRIVING_FORWARD = 5
-    RETRACTING_ACTUATOR = 6
-    DRIVING_BACKWARD = 7
-    RUNNING_DUMP_BELT = 8
+    RESET_DRIVE_TIMER = 5  # New state to reset drive timer
+    DRIVING_FORWARD = 6
+    DRIVING_FORWARD_WITH_DUMP = 7
+    RETRACTING_ACTUATOR = 8
+    DRIVING_BACKWARD = 9
+    RUNNING_DUMP_BELT = 10
 
     @staticmethod
     def to_string(state):
@@ -47,7 +47,9 @@ class DigState:
             DigState.MOVE_TO_START: "MOVE_TO_START",
             DigState.MOVE_TO_POSITION: "MOVE_TO_POSITION",
             DigState.EXTENDING_ACTUATOR: "EXTENDING_ACTUATOR",
+            DigState.RESET_DRIVE_TIMER: "RESET_DRIVE_TIMER",
             DigState.DRIVING_FORWARD: "DRIVING_FORWARD",
+            DigState.DRIVING_FORWARD_WITH_DUMP: "DRIVING_FORWARD_WITH_DUMP",
             DigState.RETRACTING_ACTUATOR: "RETRACTING_ACTUATOR",
             DigState.DRIVING_BACKWARD: "DRIVING_BACKWARD",
             DigState.RUNNING_DUMP_BELT: "RUNNING_DUMP_BELT"
@@ -99,15 +101,24 @@ class ArduinoControl(Node):
         # Initialize digging sequence variables
         self.current_state = DigState.IDLE
         self.state_start_time = 0.0
+        self.drive_start_time = 0.0  # Track when we started driving forward
         self.last_periodic_dump_time = 0.0
         self.is_periodic_dumping = False
         self.drive_forward_s = DRIVE_FORWARD_S_DEFAULT
         self.dump_travel_time_s = 3.0
         self.drive_and_dig_speed_mps = DRIVE_AND_DIG_SPEED_MPS_DEFAULT
         self.backward_travel_speed_mps = BACKWARD_TRAVEL_SPEED_MPS_DEFAULT
+        self.forward_move_time_s = 2.0  # Default 2.0 seconds
+        self.actuator_lower_time_s = 4.0  # Default 4.0 seconds
         self.is_dig_and_dump = False
         self.current_cycle = 0
         self.total_cycles = 1
+
+        # Teleop state tracking
+        self.dig_belt_on = False
+        self.prev_dig_button = False
+        self.x_button_forward = False  # Flag for X button forward movement
+        self.y_button_backward = False  # Flag for Y button backward movement
 
         # Create timer for sequence control
         self.sequence_timer = self.create_timer(0.1, self.sequence_timer_callback)
@@ -120,17 +131,17 @@ class ArduinoControl(Node):
             self.is_dig_and_dump = False
             self.total_cycles = 1
             self.current_cycle = 0
-            self.transition_to_state(DigState.MOVE_TO_POSITION)
+            self.transition_to_state(DigState.EXTENDING_ACTUATOR)  # Skip MOVE_TO_START for single dig
         elif msg.command == "START_DIG_AND_DUMP":
             self.is_dig_and_dump = True
             self.total_cycles = 1
             self.current_cycle = 0
-            self.transition_to_state(DigState.MOVE_TO_POSITION)
+            self.transition_to_state(DigState.EXTENDING_ACTUATOR)  # Skip MOVE_TO_START for single dig+dump
         elif msg.command == "START_DIG_AND_DUMP_X3":
             self.is_dig_and_dump = True
             self.total_cycles = 3
             self.current_cycle = 0
-            self.transition_to_state(DigState.MOVE_TO_START)  # Start with positioning for 3x dig
+            self.transition_to_state(DigState.MOVE_TO_START)  # Only use MOVE_TO_START for 3x dig+dump
         elif msg.command == "STOP_DIG":
             self.stop_sequence()
         elif msg.command == "CONFIG":
@@ -138,12 +149,18 @@ class ArduinoControl(Node):
             self.travel_time_s = msg.travel_time / 10.0
             self.drive_and_dig_speed_mps = msg.drive_and_dig_speed_tenths / 10.0
             self.backward_travel_speed_mps = msg.backward_travel_speed_tenths / 10.0
+            self.forward_move_time_s = msg.forward_move_time / 10.0
+            self.actuator_lower_time_s = msg.actuator_lower_time / 10.0
             self.drive_forward_s = self.dig_time_s
             self.dump_travel_time_s = self.travel_time_s
 
     def transition_to_state(self, new_state):
         self.current_state = new_state
         self.state_start_time = time.time()
+        
+        # Reset drive timer when entering RESET_DRIVE_TIMER state
+        if new_state == DigState.RESET_DRIVE_TIMER:
+            self.drive_start_time = time.time()
         
         # Update control message based on state
         if new_state == DigState.TELEOP:
@@ -156,23 +173,25 @@ class ArduinoControl(Node):
             )
         elif new_state == DigState.MOVE_TO_POSITION:
             self.update_control_message(dig_belt=0, dump_belt=0, actuator_extend=False, 
-                                     actuator_retract=False, linearx_mps=self.drive_and_dig_speed_mps)
+                                     actuator_retract=False, linearx_mps=self.backward_travel_speed_mps)
         elif new_state == DigState.EXTENDING_ACTUATOR:
             self.update_control_message(dig_belt=1, dump_belt=0, actuator_extend=True, 
+                                     actuator_retract=False, linearx_mps=0.0)
+        elif new_state == DigState.RESET_DRIVE_TIMER:
+            self.update_control_message(dig_belt=1, dump_belt=0, actuator_extend=False, 
                                      actuator_retract=False, linearx_mps=0.0)
         elif new_state == DigState.DRIVING_FORWARD:
             self.update_control_message(dig_belt=1, dump_belt=0, actuator_extend=False, 
                                      actuator_retract=False, linearx_mps=self.drive_and_dig_speed_mps)
-            self.last_periodic_dump_time = time.time()
-            self.is_periodic_dumping = False
+        elif new_state == DigState.DRIVING_FORWARD_WITH_DUMP:
+            self.update_control_message(dig_belt=1, dump_belt=1, actuator_extend=False, 
+                                     actuator_retract=False, linearx_mps=self.drive_and_dig_speed_mps)
         elif new_state == DigState.RETRACTING_ACTUATOR:
             self.update_control_message(dig_belt=1, dump_belt=0, actuator_extend=False, 
                                      actuator_retract=True, linearx_mps=0.0)
         elif new_state == DigState.DRIVING_BACKWARD:
             self.update_control_message(dig_belt=0, dump_belt=0, actuator_extend=False, 
                                      actuator_retract=False, linearx_mps=-self.backward_travel_speed_mps)
-            self.last_periodic_dump_time = time.time()
-            self.is_periodic_dumping = False
         elif new_state == DigState.RUNNING_DUMP_BELT:
             self.update_control_message(dig_belt=0, dump_belt=1, actuator_extend=False, 
                                      actuator_retract=False, linearx_mps=0.0)
@@ -207,39 +226,37 @@ class ArduinoControl(Node):
 
         current_time = time.time()
         elapsed = current_time - self.state_start_time
+        total_drive_time = current_time - self.drive_start_time if self.current_state in [DigState.DRIVING_FORWARD, DigState.DRIVING_FORWARD_WITH_DUMP] else 0
 
-        # Handle periodic dump belt operation during driving states
-        if self.current_state in [DigState.DRIVING_FORWARD, DigState.DRIVING_BACKWARD]:
-            time_since_last_dump = current_time - self.last_periodic_dump_time
-            
-            if not self.is_periodic_dumping and time_since_last_dump >= PERIODIC_DUMP_INTERVAL_S:
-                # Start periodic dump
-                self.is_periodic_dumping = True
-                self.last_periodic_dump_time = current_time
-                self.update_control_message(
-                    dump_belt=1,
-                    dig_belt=1 if self.current_state == DigState.DRIVING_FORWARD else 0,
-                    linearx_mps=self.drive_and_dig_speed_mps if self.current_state == DigState.DRIVING_FORWARD else -self.backward_travel_speed_mps
-                )
-            elif self.is_periodic_dumping and time_since_last_dump >= PERIODIC_DUMP_DURATION_S:
-                # Stop periodic dump
-                self.is_periodic_dumping = False
-                self.update_control_message(
-                    dump_belt=0,
-                    dig_belt=1 if self.current_state == DigState.DRIVING_FORWARD else 0,
-                    linearx_mps=self.drive_and_dig_speed_mps if self.current_state == DigState.DRIVING_FORWARD else -self.backward_travel_speed_mps
-                )
+        # Debug logging for drive states
+        if self.current_state in [DigState.DRIVING_FORWARD, DigState.DRIVING_FORWARD_WITH_DUMP]:
+            self.get_logger().info(f'State: {DigState.to_string(self.current_state)}, Total Drive Time: {total_drive_time:.1f}s, Target: {self.drive_forward_s:.1f}s')
 
         # State transitions
-        if self.current_state == DigState.MOVE_TO_START and elapsed >= 2.0:  # Move forward for 2 seconds
-            self.transition_to_state(DigState.MOVE_TO_POSITION)
-        elif self.current_state == DigState.MOVE_TO_POSITION and elapsed >= 2.0:
+        if self.current_state == DigState.MOVE_TO_START and elapsed >= self.forward_move_time_s:
+            if self.total_cycles == 3:  # Only go to MOVE_TO_POSITION for 3x dig and dump
+                self.transition_to_state(DigState.MOVE_TO_POSITION)
+            else:
+                self.transition_to_state(DigState.EXTENDING_ACTUATOR)
+        elif self.current_state == DigState.MOVE_TO_POSITION and elapsed >= self.forward_move_time_s:
             self.transition_to_state(DigState.EXTENDING_ACTUATOR)
-        elif self.current_state == DigState.EXTENDING_ACTUATOR and elapsed >= ACTUATOR_EXTEND_S:
+        elif self.current_state == DigState.EXTENDING_ACTUATOR and elapsed >= self.actuator_lower_time_s:
+            self.transition_to_state(DigState.RESET_DRIVE_TIMER)
+        elif self.current_state == DigState.RESET_DRIVE_TIMER:
             self.transition_to_state(DigState.DRIVING_FORWARD)
-        elif self.current_state == DigState.DRIVING_FORWARD and elapsed >= self.drive_forward_s:
-            self.transition_to_state(DigState.RETRACTING_ACTUATOR)
-        elif self.current_state == DigState.RETRACTING_ACTUATOR and elapsed >= ACTUATOR_RETRACT_S:
+        elif self.current_state == DigState.DRIVING_FORWARD:
+            if total_drive_time >= self.drive_forward_s:
+                self.get_logger().info(f'Drive time complete: {total_drive_time:.1f}s >= {self.drive_forward_s:.1f}s')
+                self.transition_to_state(DigState.RETRACTING_ACTUATOR)
+            elif elapsed >= PERIODIC_DUMP_INTERVAL_S:
+                self.transition_to_state(DigState.DRIVING_FORWARD_WITH_DUMP)
+        elif self.current_state == DigState.DRIVING_FORWARD_WITH_DUMP:
+            if total_drive_time >= self.drive_forward_s:
+                self.get_logger().info(f'Drive time complete: {total_drive_time:.1f}s >= {self.drive_forward_s:.1f}s')
+                self.transition_to_state(DigState.RETRACTING_ACTUATOR)
+            elif elapsed >= PERIODIC_DUMP_DURATION_S:
+                self.transition_to_state(DigState.DRIVING_FORWARD)
+        elif self.current_state == DigState.RETRACTING_ACTUATOR and elapsed >= self.actuator_lower_time_s:
             if self.is_dig_and_dump:
                 self.transition_to_state(DigState.DRIVING_BACKWARD)
             else:
@@ -253,37 +270,24 @@ class ArduinoControl(Node):
             else:
                 self.transition_to_state(DigState.TELEOP)
 
-        # Continuously send the appropriate control message for the current state
-        if self.current_state == DigState.MOVE_TO_START:
-            self.update_control_message(dig_belt=0, dump_belt=0, actuator_extend=False, 
-                                     actuator_retract=False, linearx_mps=self.drive_and_dig_speed_mps)
-        elif self.current_state == DigState.MOVE_TO_POSITION:
-            self.update_control_message(dig_belt=0, dump_belt=0, actuator_extend=False, 
-                                     actuator_retract=False, linearx_mps=self.drive_and_dig_speed_mps)
-        elif self.current_state == DigState.EXTENDING_ACTUATOR:
-            self.update_control_message(dig_belt=1, dump_belt=0, actuator_extend=True, 
-                                     actuator_retract=False, linearx_mps=0.0)
-        elif self.current_state == DigState.DRIVING_FORWARD:
-            self.update_control_message(dig_belt=1, dump_belt=0, actuator_extend=False, 
-                                     actuator_retract=False, linearx_mps=self.drive_and_dig_speed_mps)
-        elif self.current_state == DigState.RETRACTING_ACTUATOR:
-            self.update_control_message(dig_belt=1, dump_belt=0, actuator_extend=False, 
-                                     actuator_retract=True, linearx_mps=0.0)
-        elif self.current_state == DigState.DRIVING_BACKWARD:
-            self.update_control_message(dig_belt=0, dump_belt=0, actuator_extend=False, 
-                                     actuator_retract=False, linearx_mps=-self.backward_travel_speed_mps)
-        elif self.current_state == DigState.RUNNING_DUMP_BELT:
-            self.update_control_message(dig_belt=0, dump_belt=1, actuator_extend=False, 
-                                     actuator_retract=False, linearx_mps=0.0)
-
     def joy(self, msg):
         if self.current_state != DigState.TELEOP:
             return
 
+        # Handle dig belt toggle
+        dig_button = msg.buttons[0]
+        if dig_button and not self.prev_dig_button:  # Button just pressed
+            self.dig_belt_on = not self.dig_belt_on  # Toggle state
+        self.prev_dig_button = dig_button
+
+        # Update X and Y button movement flags
+        self.x_button_forward = msg.buttons[2]
+        self.y_button_backward = msg.buttons[3]
+
         # Update control message for manual control
         self.control_message.update({
             "dump_belt": msg.buttons[1],
-            "dig_belt": msg.buttons[0],
+            "dig_belt": 1 if self.dig_belt_on else 0,
             "actuator_extend": msg.axes[7] < 0,
             "actuator_retract": msg.axes[7] > 0,
             "dpad": {"x": msg.axes[6], "y": msg.axes[7]},
@@ -295,8 +299,15 @@ class ArduinoControl(Node):
             return
 
         # Update velocity message
+        if self.x_button_forward:
+            linearx = self.drive_and_dig_speed_mps
+        elif self.y_button_backward:
+            linearx = -self.backward_travel_speed_mps
+        else:
+            linearx = msg.linear.x
+
         self.control_message.update({
-            "linearx_mps": msg.linear.x,
+            "linearx_mps": linearx,
             "angularz_rps": msg.angular.z * -1,
         })
         self.send_control_message()

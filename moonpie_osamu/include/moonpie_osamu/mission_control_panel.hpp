@@ -75,6 +75,8 @@ private:
   QSpinBox* travelTimeSpinBox;
   QSpinBox* driveAndDigSpeedSpinBox;
   QSpinBox* backwardTravelSpeedSpinBox;
+  QSpinBox* forwardMoveTimeSpinBox;
+  QSpinBox* actuatorLowerTimeSpinBox;
   QLabel* diggingStatusLabel;
 
   // Arduino control status labels
