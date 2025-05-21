@@ -14,9 +14,9 @@ using namespace std::chrono_literals;
 using json = nlohmann::json;
 
 // Timing constants
-constexpr double ACTUATOR_EXTEND_S = 6.7;
+constexpr double ACTUATOR_EXTEND_S = 4.0;
 constexpr double DRIVE_FORWARD_S_DEFAULT = 20.0;
-constexpr double ACTUATOR_RETRACT_S = 4.0;
+constexpr double ACTUATOR_RETRACT_S = 4.3;
 constexpr double DUMP_BELT_DURATION_S = 5.0;
 constexpr double PERIODIC_DUMP_INTERVAL_S = 5.0;  // Run dump belt every 5 seconds
 constexpr double PERIODIC_DUMP_DURATION_S = 1.0;  // Run dump belt for 1 second
